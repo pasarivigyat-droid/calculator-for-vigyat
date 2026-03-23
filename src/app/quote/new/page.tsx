@@ -666,7 +666,7 @@ export default function NewQuotePage() {
                 )}
              </div>
 
-             <div className="bg-[#2d221c] text-white p-8 rounded-3xl sticky top-24 shadow-2xl shadow-amber-900/20 ring-1 ring-white/10">
+             <div className="relative lg:sticky lg:top-24 bg-[#2d221c] text-white p-6 md:p-8 rounded-3xl shadow-2xl shadow-amber-900/20 ring-1 ring-white/10">
                 <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
                    <Calculator className="w-6 h-6 text-amber-500" /> Cost Summary
                 </h3>
