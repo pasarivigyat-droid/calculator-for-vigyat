@@ -115,18 +115,10 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<Quotation>({
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
-      woodBreakdown: [
-        { id: 'w_init', componentName: '', woodType: '', length_ft: 0, width_in: 0, thickness_in: 0, quantity: 1, rate_per_gf: 0, gun_foot: 0, total_cost: 0, isRateOverridden: false }
-      ],
-      plyBreakdown: [
-        { id: 'p_init', componentName: '', plyCategory: 'plywood', thickness_mm: 18, sheet_length_ft: 8, sheet_width_ft: 4, cut_length_in: 0, cut_width_in: 0, quantity: 1, sqft: 0, wastage_percent: 0, wastage_amount: 0, rate_per_sqft: 0, isRateOverridden: false, total_cost: 0 }
-      ],
-      foamBreakdown: [
-        { id: 'f_init', componentName: '', foamType: 'PU', specification: 'Standard', thickness_in: 2, cut_length_in: 0, cut_width_in: 0, quantity: 1, sqft: 0, master_rate: 0, rate_per_sqft: 0, wastage_percent: 0, wastage_amount: 0, isRateOverridden: false, total_cost: 0 }
-      ],
-      fabricBreakdown: [
-        { id: 'fab_init', componentName: '', fabricType: '', metersRequired: 0, wastagePercent: 0, ratePerMeter: 0, totalCost: 0, isCustomRate: false }
-      ],
+      woodBreakdown: [],
+      plyBreakdown: [],
+      foamBreakdown: [],
+      fabricBreakdown: [],
       status: 'Draft',
       gstPercent: 18,
       factoryExpensePercent: 30,
