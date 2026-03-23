@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "WoodMaster": {
+      "title": "Wood Master Rate",
+      "description": "Master rates for different types of wood",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "description": "e.g. Sagawood, Babool" },
+        "thickness": { "type": "string", "description": "e.g. 1 inch, 2 inch" },
+        "ratePerGF": { "type": "number", "description": "Rate per Gun Foot" }
+      },
+      "required": ["type", "ratePerGF"]
+    },
+    "PlyMaster": {
+      "title": "Ply Master Rate",
+      "description": "Master rates for different types and thicknesses of plywood",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "description": "e.g. Commercial, Marine, Flexi" },
+        "thickness": { "type": "string", "description": "e.g. 18mm, 12mm" },
+        "ratePerSqFt": { "type": "number", "description": "Rate per Square Foot" }
+      },
+      "required": ["type", "thickness", "ratePerSqFt"]
+    },
+    "FoamMaster": {
+      "title": "Foam Master Rate",
+      "description": "Master rates for foam types",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "description": "e.g. Nu-Feel" },
+        "spec": { "type": "string", "description": "Specification or density" },
+        "unit": { "type": "string", "description": "Sheet or Block" },
+        "rate": { "type": "number", "description": "Rate per unit" }
+      },
+      "required": ["type", "rate"]
+    },
+    "Quotation": {
+      "title": "Product Quotation",
+      "description": "A complete product costing and quotation record",
+      "type": "object",
+      "properties": {
+        "productName": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerType": { "type": "string", "enum": ["Architect", "Interior Designer", "House Owner", "Showroom", "Third-party Supplier"] },
+        "imageUrl": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "woodItems": { "type": "array" },
+        "plyItems": { "type": "array" },
+        "foamItems": { "type": "array" },
+        "labour": { "type": "object" },
+        "misc": { "type": "number" },
+        "factoryExpenseRate": { "type": "number" },
+        "markupRate": { "type": "number" },
+        "totalInternalCost": { "type": "number" },
+        "sellingPrice": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["productName", "totalInternalCost", "sellingPrice", "createdAt", "createdBy"]
+    }
+  },
+  "firestore": {
+    "/masters/wood/items/{id}": { "schema": "WoodMaster", "description": "Wood rate master" },
+    "/masters/ply/items/{id}": { "schema": "PlyMaster", "description": "Ply rate master" },
+    "/masters/foam/items/{id}": { "schema": "FoamMaster", "description": "Foam rate master" },
+    "/quotations/{id}": { "schema": "Quotation", "description": "Saved quotations" }
+  }
+}
