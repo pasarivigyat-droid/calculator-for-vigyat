@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Quotation, CustomerType, WoodMaster, PlyMaster, FoamMaster, FabricMaster, WoodRow, PlyRow, FoamRow, FabricRow, QuoteStatus } from "@/types";
 import { 
-  calculateGunFoot, calculatePlyRow, calculateFoamRow, calculateFabricRow,
+  calculateGunFoot, calculateWoodRow, calculatePlyRow, calculateFoamRow, calculateFabricRow,
   calculateFinalQuotation, findWoodMaster, findPlyMaster, findFoamMaster, getWoodMatchReason, getPlyMatchReason, getFoamMatchReason
 } from "@/lib/utils/calculations";
 import { getWoodMasters, getPlyMasters, getFoamMasters, getFabricMasters, getMarkupSettings, updateQuotation, getQuotation } from "@/lib/firebase/services";
