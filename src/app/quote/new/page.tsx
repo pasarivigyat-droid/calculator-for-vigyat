@@ -19,6 +19,7 @@ import {
 import { getWoodMasters, getPlyMasters, getFoamMasters, createQuotation } from "@/lib/firebase/services";
 import { useRouter } from "next/navigation";
 import { generateRefCode } from "@/lib/utils/formatters";
+import { compressImage } from "@/lib/utils/image_compression";
 
 const CUSTOMER_TYPES: CustomerType[] = [
   "Architect", "Interior Designer", "House Owner", "Showroom", "Third-party Supplier",
@@ -364,7 +365,16 @@ export default function NewQuotePage() {
                       const file = e.target.files?.[0];
                       if (file) {
                         const reader = new FileReader();
-                        reader.onloadend = () => setValue("productImage", reader.result as string);
+                        reader.onloadend = async () => {
+                          const originalDataUrl = reader.result as string;
+                          try {
+                            const compressed = await compressImage(originalDataUrl, 800, 0.7);
+                            setValue("productImage", compressed);
+                          } catch (err) {
+                            console.error("Compression failed", err);
+                            setValue("productImage", originalDataUrl); // fallback
+                          }
+                        };
                         reader.readAsDataURL(file);
                       }
                     }}
@@ -414,19 +424,20 @@ export default function NewQuotePage() {
 
                   return (
                     <div key={field.id} className={`grid grid-cols-1 lg:grid-cols-12 gap-3 p-4 rounded-xl border transition-all hover:shadow-md ${!hasRate && row?.woodType ? 'bg-red-50/30 border-red-200' : row?.isRateOverridden ? 'bg-amber-50/50 border-amber-200' : 'bg-gray-50/50 border-gray-100'}`}>
-                      <div className="col-span-2"><Input placeholder="e.g. Front Legs" {...register(`woodBreakdown.${index}.componentName`)} /></div>
+                      <div className="col-span-2"><Input label="Component Name" placeholder="e.g. Front Legs" {...register(`woodBreakdown.${index}.componentName`)} /></div>
                       <div className="col-span-2">
                         <Select 
+                          label="Wood Type"
                           options={woodTypes.map(t => ({ label: t, value: t }))} 
                           {...register(`woodBreakdown.${index}.woodType`)} 
                         />
                       </div>
-                      <div><Input type="number" step="0.01" {...register(`woodBreakdown.${index}.length_ft`, { valueAsNumber: true })} /></div>
-                      <div><Input type="number" step="0.01" {...register(`woodBreakdown.${index}.width_in`, { valueAsNumber: true })} /></div>
-                      <div><Input type="number" step="0.01" {...register(`woodBreakdown.${index}.thickness_in`, { valueAsNumber: true })} /></div>
-                      <div><Input type="number" {...register(`woodBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
+                      <div><Input label="Length (ft)" type="number" step="0.01" {...register(`woodBreakdown.${index}.length_ft`, { valueAsNumber: true })} /></div>
+                      <div><Input label="Width (in)" type="number" step="0.01" {...register(`woodBreakdown.${index}.width_in`, { valueAsNumber: true })} /></div>
+                      <div><Input label="Thickness (in)" type="number" step="0.01" {...register(`woodBreakdown.${index}.thickness_in`, { valueAsNumber: true })} /></div>
+                      <div><Input label="Qty" type="number" {...register(`woodBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
                       <div className="col-span-2 relative">
-                         <Input type="number" step="0.01" readOnly={!row?.isRateOverridden} {...register(`woodBreakdown.${index}.rate_per_gf`, { valueAsNumber: true })} className={row?.isRateOverridden ? "bg-amber-50 border-amber-300" : "bg-gray-100/50"} />
+                         <Input label="Rate/GF" type="number" step="0.01" readOnly={!row?.isRateOverridden} {...register(`woodBreakdown.${index}.rate_per_gf`, { valueAsNumber: true })} className={row?.isRateOverridden ? "bg-amber-50 border-amber-300" : "bg-gray-100/50"} />
                          <button type="button" onClick={() => setValue(`woodBreakdown.${index}.isRateOverridden`, !watch(`woodBreakdown.${index}.isRateOverridden`))} className={`absolute right-2 top-11 p-1 rounded text-[9px] ${watch(`woodBreakdown.${index}.isRateOverridden`) ? "text-amber-600 font-bold" : "text-gray-300"}`} title="Toggle manual override">
                             <AlertCircle className="w-3 h-3" />
                          </button>
@@ -479,25 +490,27 @@ export default function NewQuotePage() {
 
                   return (
                     <div key={field.id} className={`grid grid-cols-1 lg:grid-cols-12 gap-3 p-4 rounded-xl border transition-all hover:shadow-md ${!hasRate && plyRow?.plyCategory ? 'bg-red-50/30 border-red-200' : plyRow?.isRateOverridden ? 'bg-amber-50/50 border-amber-200' : 'bg-gray-50/50 border-gray-100'}`}>
-                      <div className="col-span-2"><Input placeholder="Seat Base" {...register(`plyBreakdown.${index}.componentName`)} /></div>
+                      <div className="col-span-2"><Input label="Component" placeholder="Seat Base" {...register(`plyBreakdown.${index}.componentName`)} /></div>
                       <div>
                         <Select 
+                          label="Category"
                           options={plyCategories.map(c => ({ label: c, value: c }))} 
                           {...register(`plyBreakdown.${index}.plyCategory`)} 
                         />
                       </div>
-                      <div><Input type="number" placeholder="18" {...register(`plyBreakdown.${index}.thickness_mm`, { valueAsNumber: true })} /></div>
-                      <div><Input type="number" step="0.01" {...register(`plyBreakdown.${index}.cut_length_in`, { valueAsNumber: true })} /></div>
-                      <div><Input type="number" step="0.01" {...register(`plyBreakdown.${index}.cut_width_in`, { valueAsNumber: true })} /></div>
-                      <div><Input type="number" {...register(`plyBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
+                      <div><Input label="T (mm)" type="number" placeholder="18" {...register(`plyBreakdown.${index}.thickness_mm`, { valueAsNumber: true })} /></div>
+                      <div><Input label="L (in)" type="number" step="0.01" {...register(`plyBreakdown.${index}.cut_length_in`, { valueAsNumber: true })} /></div>
+                      <div><Input label="W (in)" type="number" step="0.01" {...register(`plyBreakdown.${index}.cut_width_in`, { valueAsNumber: true })} /></div>
+                      <div><Input label="Qty" type="number" {...register(`plyBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
                       <div className="relative">
-                         <Input type="number" step="0.01" readOnly={!plyRow?.isRateOverridden} {...register(`plyBreakdown.${index}.rate_per_sqft`, { valueAsNumber: true })} className={plyRow?.isRateOverridden ? "bg-amber-50 border-amber-300" : "bg-gray-100/50"} />
+                         <Input label="Rate/SqFt" type="number" step="0.01" readOnly={!plyRow?.isRateOverridden} {...register(`plyBreakdown.${index}.rate_per_sqft`, { valueAsNumber: true })} className={plyRow?.isRateOverridden ? "bg-amber-50 border-amber-300" : "bg-gray-100/50"} />
                          <button type="button" onClick={() => setValue(`plyBreakdown.${index}.isRateOverridden`, !watch(`plyBreakdown.${index}.isRateOverridden`))} className={`absolute right-1 top-11 p-0.5 rounded ${watch(`plyBreakdown.${index}.isRateOverridden`) ? "text-amber-600" : "text-gray-300"}`} title="Toggle override">
                             <AlertCircle className="w-3 h-3" />
                          </button>
                       </div>
-                      <div><Input type="number" step="0.1" placeholder="5" {...register(`plyBreakdown.${index}.wastage_percent`, { valueAsNumber: true })} /></div>
-                      <div className="flex items-center justify-center">
+                      <div><Input label="Wastage%" type="number" step="0.1" placeholder="5" {...register(`plyBreakdown.${index}.wastage_percent`, { valueAsNumber: true })} /></div>
+                      <div className="flex flex-col items-center justify-center pt-2">
+                         <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block lg:hidden">SqFt</span>
                          <span className="text-xs font-mono text-gray-600">{calc?.sqft?.toFixed(2) || '0'}</span>
                       </div>
                       <div className="col-span-2 text-right flex items-center justify-end gap-3">
@@ -551,31 +564,33 @@ export default function NewQuotePage() {
 
                   return (
                     <div key={field.id} className={`grid grid-cols-1 lg:grid-cols-12 gap-3 p-4 rounded-xl border transition-all hover:shadow-md ${!hasRate && foamRow?.foamType ? 'bg-red-50/30 border-red-200' : foamRow?.isRateOverridden ? 'bg-amber-50/50 border-amber-200' : 'bg-gray-50/50 border-gray-100'}`}>
-                      <div className="col-span-2"><Input placeholder="Seat Cushion" {...register(`foamBreakdown.${index}.componentName`)} /></div>
+                      <div className="col-span-2"><Input label="Component" placeholder="Seat Cushion" {...register(`foamBreakdown.${index}.componentName`)} /></div>
                       <div>
                         <Select 
+                          label="Foam Type"
                           options={foamTypes.map(t => ({ label: t, value: t }))} 
                           {...register(`foamBreakdown.${index}.foamType`)} 
                         />
                       </div>
                       <div>
                         <Select 
+                          label="Spec"
                           options={getFoamSpecs(foamRow?.foamType || '').map(s => ({ label: s, value: s }))} 
                           {...register(`foamBreakdown.${index}.specification`)} 
                         />
                       </div>
-                      <div><Input type="number" step="0.5" {...register(`foamBreakdown.${index}.thickness_in`, { valueAsNumber: true })} /></div>
-                      <div><Input type="number" step="0.01" {...register(`foamBreakdown.${index}.cut_length_in`, { valueAsNumber: true })} /></div>
-                      <div><Input type="number" step="0.01" {...register(`foamBreakdown.${index}.cut_width_in`, { valueAsNumber: true })} /></div>
-                      <div><Input type="number" {...register(`foamBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
+                      <div><Input label="T (in)" type="number" step="0.5" {...register(`foamBreakdown.${index}.thickness_in`, { valueAsNumber: true })} /></div>
+                      <div><Input label="L (in)" type="number" step="0.01" {...register(`foamBreakdown.${index}.cut_length_in`, { valueAsNumber: true })} /></div>
+                      <div><Input label="W (in)" type="number" step="0.01" {...register(`foamBreakdown.${index}.cut_width_in`, { valueAsNumber: true })} /></div>
+                      <div><Input label="Qty" type="number" {...register(`foamBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
                       <div className="relative">
-                         <Input type="number" step="0.01" readOnly={!foamRow?.isRateOverridden} {...register(`foamBreakdown.${index}.master_rate`, { valueAsNumber: true })} className={foamRow?.isRateOverridden ? "bg-amber-50 border-amber-300" : "bg-gray-100/50"} />
+                         <Input label="Base Rate" type="number" step="0.01" readOnly={!foamRow?.isRateOverridden} {...register(`foamBreakdown.${index}.master_rate`, { valueAsNumber: true })} className={foamRow?.isRateOverridden ? "bg-amber-50 border-amber-300" : "bg-gray-100/50"} />
                          <button type="button" onClick={() => setValue(`foamBreakdown.${index}.isRateOverridden`, !watch(`foamBreakdown.${index}.isRateOverridden`))} className={`absolute right-1 top-11 p-0.5 rounded ${watch(`foamBreakdown.${index}.isRateOverridden`) ? "text-amber-600" : "text-gray-300"}`} title="Toggle override">
                             <AlertCircle className="w-3 h-3" />
                          </button>
                       </div>
-                      <div><Input type="number" step="0.1" placeholder="5" {...register(`foamBreakdown.${index}.wastage_percent`, { valueAsNumber: true })} /></div>
-                      <div className="col-span-2 text-right flex items-center justify-end gap-3">
+                      <div><Input label="Wastage%" type="number" step="0.1" placeholder="5" {...register(`foamBreakdown.${index}.wastage_percent`, { valueAsNumber: true })} /></div>
+                      <div className="col-span-2 text-right flex items-center justify-end gap-3 pt-6 lg:pt-0">
                          {!hasRate && foamRow?.foamType && foamRow.foamType.trim() && <MissingRateBadge />}
                          <div>
                            <p className="text-[10px] text-gray-400 font-bold">{calc?.sqft?.toFixed(2) || '0'} sqft · ₹{derivedPerSqft.toFixed(2)}/sqft</p>
@@ -703,6 +718,31 @@ export default function NewQuotePage() {
           </div>
         )}
       </form>
+      
+      {/* Mobile Sticky Summary Footer */}
+      <div className="md:hidden fixed bottom-16 left-0 right-0 bg-[#2d221c] text-white p-4 z-40 border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1">
+            <p className="text-[10px] text-amber-500 font-bold uppercase tracking-widest opacity-70">Total Selling Price</p>
+            <p className="text-xl font-black text-amber-50">₹{(summary.finalSellingPrice || 0).toLocaleString(undefined, {maximumFractionDigits:0})}</p>
+          </div>
+          <div className="text-right flex items-center gap-3">
+             <div className="pr-2 border-r border-white/10">
+                <p className="text-[10px] text-green-400 font-bold uppercase tracking-widest opacity-70">Profit</p>
+                <p className="text-sm font-bold text-green-400">{summary.profitPercent || 0}%</p>
+             </div>
+             {step < 3 ? (
+               <Button type="button" size="sm" onClick={() => setStep(step + 1)} className="bg-amber-600 h-10 px-4">
+                 Next <ArrowRight className="w-4 h-4 ml-1" />
+               </Button>
+             ) : (
+               <Button type="button" size="sm" onClick={() => handleSubmit(onSubmit)()} disabled={missingRates.length > 0} className="bg-amber-600 h-10 px-4">
+                 Save
+               </Button>
+             )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
