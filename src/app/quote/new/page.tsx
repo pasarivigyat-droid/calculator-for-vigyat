@@ -37,6 +37,7 @@ import {
   calculateWoodRow, 
   calculatePlyRow, 
   calculateFoamRow, 
+  calculateFabricRow,
   calculateFinalQuotation,
   findWoodMaster,
   findPlyMaster,
@@ -229,8 +230,9 @@ export default function NewQuotePage() {
 
     try {
       const woodCalc = data.woodBreakdown.map(r => calculateWoodRow(r));
-      const plyCalc = data.plyBreakdown.map(r => calculatePlyRow(r));
-      const foamCalc = data.foamBreakdown.map(r => calculateFoamRow(r));
+      const plyCalc = data.plyBreakdown.map(r => calculatePlyRow(r as any));
+      const foamCalc = data.foamBreakdown.map(r => calculateFoamRow(r as any));
+      const fabricCalc = data.fabricBreakdown.map(r => calculateFabricRow(r as any));
       
       const finalData = {
         ...data,
@@ -238,7 +240,8 @@ export default function NewQuotePage() {
         woodBreakdown: woodCalc,
         plyBreakdown: plyCalc,
         foamBreakdown: foamCalc,
-        ...summary,
+        fabricBreakdown: fabricCalc,
+        summary: summary, // Correctly nested summary
         createdAt: new Date(),
         updatedAt: new Date()
       };

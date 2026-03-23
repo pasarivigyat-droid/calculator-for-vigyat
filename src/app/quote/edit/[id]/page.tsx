@@ -192,7 +192,20 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
   const onSubmit = async (data: Quotation) => {
     if (missingRates.length > 0) return alert("Please fix missing rates before saving.");
     try {
-      const finalData = { ...data, summary, updatedAt: new Date() };
+      const woodCalc = data.woodBreakdown.map(r => calculateWoodRow(r));
+      const plyCalc = data.plyBreakdown.map(r => calculatePlyRow(r as any));
+      const foamCalc = data.foamBreakdown.map(r => calculateFoamRow(r as any));
+      const fabricCalc = data.fabricBreakdown.map(r => calculateFabricRow(r as any));
+
+      const finalData = { 
+        ...data, 
+        woodBreakdown: woodCalc,
+        plyBreakdown: plyCalc,
+        foamBreakdown: foamCalc,
+        fabricBreakdown: fabricCalc,
+        summary: summary, 
+        updatedAt: new Date() 
+      };
       await updateQuotation(params.id, finalData as any);
       router.push(`/quote/view/${params.id}?download=true`);
     } catch (err) {

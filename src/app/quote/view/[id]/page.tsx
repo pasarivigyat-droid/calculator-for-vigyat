@@ -54,20 +54,26 @@ export default function InternalReviewPage() {
     
     setIsExporting(true);
     
-    // Give state a moment to update DOM
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Ensure we start from the top for capture
+    window.scrollTo(0, 0);
+    
+    // Give content and styles more time to settle
+    await new Promise(resolve => setTimeout(resolve, 1200));
     
     try {
       const element = reportRef.current;
       const canvas = await html2canvas(element, {
-        scale: 2, // High resolution
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
+        windowWidth: 1200, // Fixed width for consistent layout
         onclone: (clonedDoc) => {
-          // You can modify the cloned document if needed
           const el = clonedDoc.getElementById('pdf-content');
-          if (el) el.style.padding = '40px';
+          if (el) {
+            el.style.padding = '40px';
+            el.style.width = '1200px';
+          }
         }
       });
       
@@ -89,10 +95,9 @@ export default function InternalReviewPage() {
 
   useEffect(() => {
     if (!loading && quote && searchParams.get('download') === 'true') {
-      // Trigger download automatically if requested
       const timer = setTimeout(() => {
         downloadPdf();
-      }, 1000);
+      }, 1500); // 1.5s delay for automatic downloads
       return () => clearTimeout(timer);
     }
   }, [loading, quote, searchParams]);
