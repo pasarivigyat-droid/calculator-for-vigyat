@@ -54,12 +54,17 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     <AdminGuard>
       <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
         {/* Mobile Top Header */}
-        <div className="md:hidden flex items-center justify-between p-4 bg-white border-b sticky top-0 z-50">
-          <div className="flex items-center gap-2 font-bold text-xl text-brown-800">
-            <Calculator className="w-6 h-6 text-amber-700" />
-            <span>Woodflex</span>
+        <div className="md:hidden flex items-center justify-between p-4 bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 bg-[#2d221c] rounded-xl flex items-center justify-center shadow-lg shadow-amber-900/20">
+               <Calculator className="w-6 h-6 text-amber-500" />
+            </div>
+            <div>
+              <span className="text-xl font-black text-[#2d221c] tracking-tighter uppercase leading-none block">Woodflex</span>
+              <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest leading-none">Costing Engine</span>
+            </div>
           </div>
-          <button onClick={() => setIsOpen(true)} className="p-2">
+          <button onClick={() => setIsOpen(true)} className="p-2 text-gray-500 hover:text-amber-600 transition-colors">
             <Menu className="w-6 h-6" />
           </button>
         </div>

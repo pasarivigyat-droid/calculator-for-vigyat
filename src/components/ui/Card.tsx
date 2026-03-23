@@ -20,15 +20,15 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          "bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden",
+          "bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden",
           className
         )}
         {...props}
       >
         {title && (
-          <div className="px-6 py-4 border-b border-gray-50 bg-[#fafafa]">
-            <h3 className="text-lg font-semibold text-[#2d221c]">{title}</h3>
-            {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+          <div className="px-5 py-4 border-b border-gray-100/50 bg-[#fafafa]/80">
+            <h3 className="text-base font-bold text-[#2d221c] leading-tight flex items-center gap-2">{title}</h3>
+            {subtitle && <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 mt-1 opacity-60">{subtitle}</p>}
           </div>
         )}
         <div className="p-4 md:p-6">{children}</div>
