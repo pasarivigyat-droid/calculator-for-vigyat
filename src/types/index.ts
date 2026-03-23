@@ -11,7 +11,7 @@ export type MasterCategory = 'wood' | 'ply' | 'foam' | 'hardware' | 'markups' | 
 
 export type QuoteStatus = 'Draft' | 'Sent' | 'Approved' | 'Rejected' | 'Closed';
 
-export type CustomerType = 'Architect' | 'Interior Designer' | 'House Owner' | 'Showroom' | 'Third-party Supplier';
+export type CustomerType = 'Architect' | 'Interior Designer' | 'House Owner' | 'Showroom' | 'Third-party Supplier' | 'Furniture Manufacturer' | 'Real Estate Developer' | 'Hospitality Group' | 'Retail Client' | 'Other';
 
 // ===================================================================
 // QUOTE ROW TYPES

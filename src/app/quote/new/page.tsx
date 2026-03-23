@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   AlertCircle,
   Package,
-  Wood,
+  Trees,
   Layers,
   Wind
 } from "lucide-react";
@@ -374,7 +374,7 @@ export default function NewQuotePage() {
             {/* Tab Selector */}
             <div className="flex p-1 bg-gray-100 rounded-xl overflow-x-auto no-scrollbar gap-1">
               {[
-                { id: 'wood', label: 'Wood', count: woodFields.length, Icon: Wood },
+                { id: 'wood', label: 'Wood', count: woodFields.length, Icon: Trees },
                 { id: 'ply', label: 'Ply', count: plyFields.length, Icon: Layers },
                 { id: 'foam', label: 'Foam', count: foamFields.length, Icon: Wind },
                 { id: 'fabric', label: 'Fabric', count: fabricFields.length, Icon: Package }

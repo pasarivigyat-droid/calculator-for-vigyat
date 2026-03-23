@@ -5,7 +5,7 @@ import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { 
   Plus, Trash2, Calculator, Save, ArrowRight, ArrowLeft,
   AlertCircle, ChevronDown, ChevronUp, AlertTriangle, Beaker,
-  Copy, CheckCircle2, Printer, ExternalLink, Package, Wood, Layers, Wind
+  Copy, CheckCircle2, Printer, ExternalLink, Package, Trees, Layers, Wind
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -23,6 +23,7 @@ import { compressImage } from "@/lib/utils/image_compression";
 
 const CUSTOMER_TYPES: CustomerType[] = [
   "Architect", "Interior Designer", "House Owner", "Showroom", "Third-party Supplier",
+  "Furniture Manufacturer", "Real Estate Developer", "Hospitality Group", "Retail Client", "Other"
 ];
 
 // ===================================================================
@@ -308,7 +309,7 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
             {/* Tab Selector */}
             <div className="flex p-1 bg-gray-100 rounded-xl overflow-x-auto no-scrollbar gap-1">
               {[
-                { id: 'wood', label: 'Wood', count: woodFields.length, Icon: Wood },
+                { id: 'wood', label: 'Wood', count: woodFields.length, Icon: Trees },
                 { id: 'ply', label: 'Ply', count: plyFields.length, Icon: Layers },
                 { id: 'foam', label: 'Foam', count: foamFields.length, Icon: Wind },
                 { id: 'fabric', label: 'Fabric', count: fabricFields.length, Icon: Package }
