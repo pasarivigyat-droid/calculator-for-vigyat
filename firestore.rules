@@ -1,12 +1,40 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // TEMPORARY DEVELOPMENT RULES (UNBLOCKED ACCESS)
-    // IMPORTANT: These rules must be tightened before production use.
-    // ===============================================================
+    // Helper to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Allow authenticated users to read and write to all collections
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Specific rules for masters (can be restricted further if needed)
+    match /wood-masters/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    match /ply-masters/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    match /foam-masters/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    match /fabric-masters/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    match /quotations/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
   }
 }

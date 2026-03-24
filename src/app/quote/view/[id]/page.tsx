@@ -17,12 +17,17 @@ import {
   Package,
   CheckCircle2,
   Image as ImageIcon,
-  Download
+  Download,
+  Trees,
+  Wind,
+  ShieldCheck,
+  Activity,
+  Trees as TreesIcon
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-export default function InternalReviewPage() {
+export default function QuotationTemplatePage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const [quote, setQuote] = useState<Quotation | null>(null);
@@ -53,12 +58,10 @@ export default function InternalReviewPage() {
     if (!reportRef.current || !quote) return;
     
     setIsExporting(true);
-    
-    // Ensure we start from the top for capture
     window.scrollTo(0, 0);
     
     // Give content and styles more time to settle
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
     try {
       const element = reportRef.current;
@@ -67,23 +70,33 @@ export default function InternalReviewPage() {
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        windowWidth: 1200, // Fixed width for consistent layout
-        onclone: (clonedDoc) => {
-          const el = clonedDoc.getElementById('pdf-content');
-          if (el) {
-            el.style.padding = '40px';
-            el.style.width = '1200px';
-          }
-        }
+        windowWidth: 1200,
       });
       
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
       const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${quote.customerName}_Woodflex_Technical_Report.pdf`);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // First Page
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      // Subsequent Pages
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+      
+      pdf.save(`${quote.customerName}_Technical_Costing_${quote.refCode || 'Report'}.pdf`);
     } catch (error) {
       console.error("PDF generation failed:", error);
       alert("Failed to generate PDF. Falling back to print dialog.");
@@ -97,15 +110,18 @@ export default function InternalReviewPage() {
     if (!loading && quote && searchParams.get('download') === 'true') {
       const timer = setTimeout(() => {
         downloadPdf();
-      }, 1500); // 1.5s delay for automatic downloads
+      }, 1500); 
       return () => clearTimeout(timer);
     }
   }, [loading, quote, searchParams]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-800"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">
+        <div className="flex flex-col items-center gap-4">
+           <div className="w-16 h-16 border-4 border-amber-900/5 border-t-amber-700 rounded-full animate-spin"></div>
+           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-amber-900/40">Architecting Preview...</p>
+        </div>
       </div>
     );
   }
@@ -115,384 +131,445 @@ export default function InternalReviewPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="text-center">
           <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900">Quotation Not Found</h1>
-          <p className="text-gray-500">The requested internal review link is invalid or has expired.</p>
+          <h1 className="text-2xl font-bold text-gray-900 font-serif">Valuation Not Found</h1>
+          <p className="text-sm text-gray-500">The requested internal review link is invalid or has expired.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 print:bg-white print:pb-0">
-      <title>{quote.customerName} - Technical Costing Review</title>
+    <div className="min-h-screen bg-[#fafaf9] pb-20 print:bg-white print:pb-0 font-sans selection:bg-amber-100 selection:text-amber-900">
+      <title>{quote.customerName} | Woodflex Bespoke Valuation</title>
       
-      {/* Top Action Bar (Hidden in Print) */}
-      <div className="bg-white border-b sticky top-0 z-10 print:hidden shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-amber-600 p-1.5 rounded-lg">
-              <Calculator className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-gray-900">Woodflex Internal Review</span>
+      {/* Top Premium Hub Bar (Hidden in Print) */}
+      <div className="bg-[#2d221c] border-b border-white/5 sticky top-0 z-50 print:hidden shadow-2xl">
+        <div className="bg-grain absolute inset-0 opacity-10 pointer-events-none"></div>
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-4">
+             <div className="bg-amber-500/10 p-2 rounded-xl border border-white/10">
+               <ShieldCheck className="w-6 h-6 text-amber-500" />
+             </div>
+             <div>
+               <span className="block font-serif text-white text-lg tracking-tight">Factory Valuation Hub</span>
+               <span className="block text-[9px] font-black text-amber-500/50 uppercase tracking-[0.3em]">Code: #{quote.refCode || 'DFT-99'}</span>
+             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button 
               onClick={copyUrl}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+              className="flex items-center gap-2 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-amber-200 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all active:scale-95"
             >
-              {copied ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-              {copied ? "Link Copied!" : "Copy Link"}
+              {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 opacity-50" />}
+              {copied ? "Link Copied" : "Share Audit"}
             </button>
             <button 
               onClick={downloadPdf}
               disabled={isExporting}
-              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-amber-700 rounded-xl hover:bg-amber-800 transition-all shadow-lg hover:shadow-xl active:scale-95 ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`flex items-center gap-3 px-8 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-white bg-amber-600 rounded-xl hover:bg-amber-700 transition-all shadow-xl hover:shadow-amber-500/20 active:scale-95 ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <Download className={`w-4 h-4 ${isExporting ? 'animate-bounce' : ''}`} />
-              {isExporting ? "Generating PDF..." : "Download PDF"}
+              {isExporting ? "Architecting PDF..." : "Generate Export"}
             </button>
             <button 
               onClick={() => window.print()}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-gray-900 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all active:scale-95"
+              className="p-3 text-white/50 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all"
+              title="Print"
             >
-              <Printer className="w-4 h-4" />
-              Print
+              <Printer className="w-5 h-5" />
             </button>
           </div>
         </div>
       </div>
 
-      <div ref={reportRef} id="pdf-content" className={`max-w-6xl mx-auto bg-white ${isExporting ? 'p-12' : 'p-4 pt-10'}`}>
-        {/* Professional Letterhead Header */}
-        <div className="border-b-4 border-amber-900/10 pb-8 mb-10 flex justify-between items-end">
-          <div>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-amber-700 rounded-xl flex items-center justify-center shadow-lg shadow-amber-900/20">
-                <Calculator className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <span className="text-3xl font-black tracking-tighter uppercase text-[#2d221c]">Woodflex</span>
-                <p className="text-[10px] font-bold text-amber-700 uppercase tracking-[0.3em] leading-none">Bespoke Furniture Solutions</p>
-              </div>
-            </div>
-            <h1 className="text-xl font-bold text-gray-900 uppercase tracking-tight">Technical Costing & Audit Report</h1>
-            <p className="text-xs text-gray-400 font-medium">Internal review document for production and pricing approval.</p>
-          </div>
-          <div className="text-right space-y-1">
-            <div className="inline-block px-3 py-1 bg-gray-900 text-white rounded-lg text-[10px] font-black tracking-widest uppercase mb-2">
-              ID: {quote.refCode || 'DFT-001'}
-            </div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Date Generated</p>
-            <p className="text-sm font-black text-gray-900">{new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-          </div>
-        </div>
-
-        <div className="pt-4">
-        {/* Header Hero & Executive Summary */}
-        <div className="grid md:grid-cols-3 gap-8 mb-10">
-          <div className="md:col-span-2 space-y-6">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest shadow-sm ${
-                  quote.status === 'Approved' ? 'bg-green-600 text-white' :
-                  quote.status === 'Rejected' ? 'bg-red-600 text-white' :
-                  quote.status === 'Sent' ? 'bg-blue-600 text-white' :
-                  'bg-amber-600 text-white'
-                }`}>
-                  {quote.status || 'Draft'}
-                </span>
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Client Name</span>
-              </div>
-              <h2 className="text-4xl font-black text-[#2d221c] tracking-tight leading-tight uppercase">{quote.customerName}</h2>
-              <p className="text-lg text-amber-700/80 font-bold uppercase tracking-wider">{quote.productCategory}</p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-gray-50 rounded-2xl border border-gray-100">
-               <div>
-                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Wood Value</p>
-                 <p className="text-lg font-black text-gray-900">{formatCurrency(quote.summary?.totalWood || 0)}</p>
-               </div>
-               <div>
-                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ply Value</p>
-                 <p className="text-lg font-black text-gray-900">{formatCurrency(quote.summary?.totalPly || 0)}</p>
-               </div>
-               <div>
-                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Foam Value</p>
-                 <p className="text-lg font-black text-gray-900">{formatCurrency(quote.summary?.totalFoam || 0)}</p>
-               </div>
-               <div>
-                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Material</p>
-                 <p className="text-lg font-black text-amber-700">{formatCurrency(quote.summary?.totalMaterials || 0)}</p>
-               </div>
-            </div>
-          </div>
+      <div ref={reportRef} id="pdf-content" className="max-w-5xl mx-auto bg-white shadow-2xl print:shadow-none my-14 print:my-0 rounded-[3rem] overflow-hidden">
+        
+        {/* =================================================================== */}
+        {/* PAGE 1: CLIENT QUOTATION SUMMARY                                  */}
+        {/* =================================================================== */}
+        <div className="p-16 md:p-24 min-h-[1100px] flex flex-col page-break-after-always relative bg-white">
+          <div className="bg-grain absolute inset-0 opacity-[0.03] pointer-events-none"></div>
           
-          <div className="relative group aspect-square md:aspect-auto">
-            {quote.productImage ? (
-              <div className="w-full h-full rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-gray-50 flex items-center justify-center p-2">
-                <img 
-                  src={quote.productImage} 
-                  alt="Product Reference" 
-                  className="max-w-full max-h-full object-contain" 
-                />
-              </div>
-            ) : (
-              <div className="w-full h-full rounded-2xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-gray-300">
-                <ImageIcon className="w-12 h-12 mb-2" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">No Reference</span>
-              </div>
-            )}
-          </div>
-        </div>
+          {/* Decorative Corner */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-900/5 rounded-bl-[10rem] pointer-events-none"></div>
 
-        {/* Technical Breakdown Sections */}
-        <div className="grid lg:grid-cols-3 gap-8 print:block">
-          {/* Main Breakdown Area */}
-          <div className="lg:col-span-2 space-y-8 print:space-y-4">
+          {/* Page 1 Header */}
+          <div className="flex justify-between items-start mb-24 relative z-10">
+            <div>
+               <div className="flex items-center gap-4 mb-8">
+                <div className="w-14 h-14 bg-[#2d221c] rounded-2xl flex items-center justify-center shadow-2xl shadow-black/10">
+                  <Calculator className="w-8 h-8 text-amber-500" />
+                </div>
+                <span className="text-3xl font-serif tracking-tight text-[#2d221c]">Woodflex</span>
+              </div>
+              <h1 className="text-6xl font-serif text-[#2d221c] tracking-tight leading-none">Quotation</h1>
+              <p className="text-amber-900/30 font-black tracking-[0.4em] text-[10px] uppercase mt-4">Industry-Aligned Bespoke Furniture</p>
+            </div>
             
-            {/* Wood Breakdown */}
-            <section className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 print:p-0 print:border-none print:shadow-none print:break-inside-avoid">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3 print:mb-3 print:text-lg">
-                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center print:hidden">
-                  <FileText className="w-4 h-4 text-amber-700" />
-                </div>
-                Wood Specifications (Raw Materials)
-              </h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left border-b border-gray-100 pb-4 print:border-gray-900">
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest pl-2 print:text-gray-900">Component</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest print:text-gray-900">Type</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest print:text-gray-900">Size (L x W x T)</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest print:text-gray-900">Qty</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest text-right pr-2 print:text-gray-900">Total GF</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50 print:divide-gray-200">
-                    {quote.woodBreakdown.map((row) => (
-                      <tr key={row.id} className="group hover:bg-gray-50 transition-colors">
-                        <td className="py-4 pl-2 font-semibold text-gray-900 print:py-2">{row.componentName}</td>
-                        <td className="py-4 text-gray-600 print:py-2">{row.woodType}</td>
-                        <td className="py-4 text-gray-500 print:py-2">{row.length_ft}' x {row.width_in}" x {row.thickness_in}"</td>
-                        <td className="py-4 text-gray-900 font-medium print:py-2">{row.quantity}</td>
-                        <td className="py-4 text-right pr-2 font-bold text-amber-700 print:py-2">{row.gun_foot} GF</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="border-t-2 border-gray-100 print:border-gray-900">
-                    <tr className="bg-gray-50/50 font-bold">
-                      <td colSpan={3} className="py-4 pl-2 text-gray-400 uppercase text-[10px] tracking-widest">Total Wood Volume</td>
-                      <td className="py-4 text-gray-900">{quote.woodBreakdown.reduce((sum, r) => sum + r.quantity, 0)} Units</td>
-                      <td className="py-4 text-right pr-2 text-amber-900">{quote.woodBreakdown.reduce((sum, r) => sum + r.gun_foot, 0).toFixed(2)} GF</td>
-                    </tr>
-                  </tfoot>
-                </table>
+            <div className="text-right space-y-2 pt-4">
+              <div className="space-y-1">
+                <p className="text-[9px] font-black text-amber-900/40 uppercase tracking-widest">Quote Reference</p>
+                <p className="text-2xl font-serif text-[#2d221c]">#{quote.refCode || 'DFT-99'}</p>
               </div>
-            </section>
-
-            {/* Plywood Breakdown */}
-            <section className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 print:p-0 print:border-none print:shadow-none print:break-inside-avoid print:mt-10">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3 print:mb-3 print:text-lg">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center print:hidden">
-                  <Layers className="w-4 h-4 text-blue-700" />
-                </div>
-                Plywood Requirements
-              </h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left border-b border-gray-100 pb-4 print:border-gray-900">
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest pl-2 print:text-gray-900">Component</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest print:text-gray-900">Category</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest print:text-gray-900">Thickness</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest px-4 print:text-gray-900">Size (in)</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest text-right pr-2 print:text-gray-900">Sq.Ft</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50 print:divide-gray-200">
-                    {quote.plyBreakdown.map((row) => (
-                      <tr key={row.id} className="group hover:bg-gray-50 transition-colors">
-                        <td className="py-4 pl-2 font-semibold text-gray-900 print:py-2">{row.componentName}</td>
-                        <td className="py-4 text-gray-600 print:py-2">{row.plyCategory}</td>
-                        <td className="py-4 text-gray-500 font-medium print:py-2">{row.thickness_mm} MM</td>
-                        <td className="py-4 px-4 text-gray-400 print:py-2">{row.cut_length_in}" x {row.cut_width_in}"</td>
-                        <td className="py-4 text-right pr-2 font-bold text-blue-700 print:py-2">{row.sqft} FT²</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="border-t-2 border-gray-100 print:border-gray-900">
-                    <tr className="bg-gray-100/30 font-bold">
-                      <td colSpan={4} className="py-4 pl-2 text-gray-400 uppercase text-[10px] tracking-widest">Total Surface Area</td>
-                      <td className="py-4 text-right pr-2 text-blue-900">{quote.plyBreakdown.reduce((sum, r) => sum + r.sqft, 0).toFixed(2)} FT²</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </section>
-
-            {/* Foam Specs */}
-            <section className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 print:p-0 print:border-none print:shadow-none print:break-inside-avoid print:mt-10">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3 print:mb-3 print:text-lg">
-                <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center print:hidden">
-                   <ImageIcon className="w-4 h-4 text-orange-700" />
-                </div>
-                Internal Foam Requirements
-              </h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left border-b border-gray-100 pb-4 print:border-gray-900">
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest pl-2 print:text-gray-900">Component</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest print:text-gray-900">Type</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest print:text-gray-900">Thickness</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest px-4 print:text-gray-900">Size (in)</th>
-                      <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest text-right pr-2 print:text-gray-900">Sq.Ft</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50 print:divide-gray-200">
-                    {quote.foamBreakdown?.map((row) => (
-                      <tr key={row.id} className="group hover:bg-gray-50 transition-colors">
-                        <td className="py-4 pl-2 font-semibold text-gray-900 print:py-2">{row.componentName}</td>
-                        <td className="py-4 text-gray-600 print:py-2">{row.foamType}</td>
-                        <td className="py-4 text-gray-500 font-medium print:py-2">{row.thickness_in}"</td>
-                        <td className="py-4 px-4 text-gray-400 print:py-2">{row.cut_length_in}" x {row.cut_width_in}"</td>
-                        <td className="py-4 text-right pr-2 font-bold text-orange-700 print:py-2">{row.sqft} FT²</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="border-t-2 border-gray-100 print:border-gray-900">
-                    <tr className="bg-orange-50/30 font-bold">
-                      <td colSpan={4} className="py-4 pl-2 text-gray-400 uppercase text-[10px] tracking-widest">Total Foam Area</td>
-                      <td className="py-4 text-right pr-2 text-orange-900">{quote.foamBreakdown?.reduce((sum, r) => sum + r.sqft, 0).toFixed(2)} FT²</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </section>
-
-            {/* Fabric Breakdown (Conditional) */}
-            {quote.fabricBreakdown && quote.fabricBreakdown.length > 0 && (
-              <section className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 print:p-0 print:border-none print:shadow-none print:break-inside-avoid print:mt-10">
-                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3 print:mb-3 print:text-lg">
-                  <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center print:hidden">
-                    <Package className="w-4 h-4 text-purple-700" />
-                  </div>
-                  Upholstery & Fabric Details
-                </h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left border-b border-gray-100 pb-4 print:border-gray-900">
-                        <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest pl-2 print:text-gray-900">Component</th>
-                        <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest print:text-gray-900">Fabric Type</th>
-                        <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest print:text-gray-900">Usage</th>
-                        <th className="py-4 font-bold text-gray-400 uppercase text-[10px] tracking-widest text-right pr-2 print:text-gray-900">Cost</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50 print:divide-gray-200">
-                      {quote.fabricBreakdown.map((row) => (
-                        <tr key={row.id} className="group hover:bg-gray-50 transition-colors">
-                          <td className="py-4 pl-2 font-semibold text-gray-900 print:py-2">{row.componentName}</td>
-                          <td className="py-4 text-gray-600 print:py-2">{row.fabricType}</td>
-                          <td className="py-4 text-gray-500 print:py-2">{row.metersRequired}M (+{row.wastagePercent}%)</td>
-                          <td className="py-4 text-right pr-2 font-bold text-purple-700 print:py-2">{formatCurrency(row.totalCost)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            )}
-          </div>
-
-          {/* Sidebar / Cost Summary Area */}
-          <div className="space-y-8 print:mt-12 print:space-y-6">
-            
-            {/* Financial Internal Review */}
-            <div className="bg-white rounded-3xl shadow-sm border-2 border-amber-900/10 p-8 print:p-6 print:rounded-2xl print:break-inside-avoid">
-              <h3 className="text-sm font-black text-amber-900/40 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                <Calculator className="w-4 h-4" /> Pricing Summary
-              </h3>
-              
-              <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-400 font-bold uppercase tracking-widest">Base Material Value</span>
-                  <span className="font-bold text-gray-900">{formatCurrency(quote.summary?.baseAmount || 0)}</span>
-                </div>
-
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-400 font-bold uppercase tracking-widest">GST ({quote.gstPercent || 18}%)</span>
-                  <span className="font-medium text-gray-600">{formatCurrency(quote.summary?.gstAmount || 0)}</span>
-                </div>
-
-                <div className="pt-4 border-t border-gray-100 mt-4">
-                  <div className="flex justify-between items-end">
-                    <span className="text-[#2d221c] text-xs font-black uppercase tracking-[0.2em]">Final Quotation</span>
-                    <span className="text-4xl font-black text-amber-700 leading-none print:text-3xl">{formatCurrency(quote.summary?.grandTotal || 0)}</span>
-                  </div>
-                </div>
-
-                <div className="mt-8 pt-6 border-t-2 border-dashed border-gray-50 space-y-3">
-                   <div className="flex justify-between items-center">
-                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Internal Cost</span>
-                     <span className="text-xs font-black text-gray-900">{formatCurrency(quote.summary?.totalInternalCost || 0)}</span>
-                   </div>
-                   <div className="flex justify-between items-center">
-                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Estimated Profit</span>
-                     <span className="text-xs font-black text-green-600">+{formatCurrency(quote.summary?.grandTotal - quote.summary?.totalInternalCost)} ({quote.summary?.profitPercent}%)</span>
-                   </div>
-                </div>
+              <div className="pt-6 space-y-1">
+                <p className="text-[9px] font-black text-amber-900/40 uppercase tracking-widest">Issue Date</p>
+                <p className="text-sm font-bold text-gray-700">{new Date(quote.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
               </div>
             </div>
+          </div>
 
-            {/* Production Efficiency */}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 print:p-6 print:border-2 print:border-red-200 print:break-inside-avoid">
-              <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2 print:mb-3">
-                <Trash2 className="w-5 h-5 text-red-500" /> Efficiency Audit
-              </h3>
-              <div className="space-y-6 print:space-y-3">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center shrink-0 print:hidden">
-                    <TrendingUp className="w-6 h-6 text-red-600" />
+          <div className="grid md:grid-cols-2 gap-20 flex-1 relative z-10">
+            {/* Left Col: Details */}
+            <div className="space-y-14">
+               <div className="space-y-8">
+                  <div className="space-y-2">
+                     <h3 className="text-[10px] font-black text-amber-700 uppercase tracking-[0.4em]">Client Entity</h3>
+                     <p className="text-3xl font-serif text-gray-900 tracking-tight">{quote.customerName}</p>
+                     <p className="text-xs text-amber-900/50 font-black uppercase tracking-widest">{quote.customerType}</p>
+                  </div>
+
+                  <div className="pt-8 border-t border-amber-900/10 space-y-2">
+                     <h3 className="text-[10px] font-black text-amber-700 uppercase tracking-[0.4em]">Project Component</h3>
+                     <p className="text-3xl font-serif text-gray-900 tracking-tight uppercase leading-tight">{quote.productName || 'Custom Furniture Piece'}</p>
+                     <p className="text-xs text-amber-900/50 font-black uppercase tracking-widest italic">{quote.productCategory}</p>
+                  </div>
+               </div>
+
+               {quote.notes && (
+                 <div className="p-8 bg-amber-50/50 rounded-[2rem] border border-amber-900/5 space-y-4">
+                    <h3 className="text-[10px] font-black text-amber-800 uppercase tracking-[0.3em]">Design Specifications</h3>
+                    <p className="text-[13px] text-gray-700 leading-relaxed font-medium italic">
+                       "{quote.notes}"
+                    </p>
+                 </div>
+               )}
+
+               <div className="pt-10">
+                  <div className="p-10 bg-[#2d221c] text-white rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                    <div className="bg-grain absolute inset-0 opacity-10 pointer-events-none"></div>
+                    <div className="relative z-10">
+                       <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em] mb-4">Investment Strategy (Base)</p>
+                       <h2 className="text-6xl font-serif tracking-tight text-white mb-2">
+                         {formatCurrency(quote.summary?.baseAmount || 0)}
+                       </h2>
+                       <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest leading-relaxed">
+                          *Excluded: GST {quote.gstPercent || 18}% + Logistics.<br/>
+                          Factory-Direct Bespoke Pricing.
+                       </p>
+                    </div>
+                  </div>
+               </div>
+            </div>
+
+            {/* Right Col: Product Photo */}
+            <div className="flex flex-col">
+               {quote.productImage ? (
+                  <div className="aspect-[3/4] rounded-[3rem] overflow-hidden shadow-[0_40px_80px_-20px_rgba(45,34,28,0.2)] border-8 border-white bg-gray-50 transform hover:scale-[1.02] transition-transform duration-700">
+                     <img 
+                        src={quote.productImage} 
+                        alt={quote.productName} 
+                        className="w-full h-full object-cover" 
+                     />
+                  </div>
+               ) : (
+                  <div className="aspect-[3/4] rounded-[3rem] bg-amber-50/30 border-4 border-dashed border-amber-900/10 flex flex-col items-center justify-center text-amber-900/10 group">
+                     <ImageIcon className="w-20 h-20 mb-6 group-hover:scale-110 transition-transform" />
+                     <p className="text-[10px] font-black uppercase tracking-[0.4em]">Visual Reference Missing</p>
+                  </div>
+               )}
+               
+               <div className="mt-12 p-8 border border-amber-900/5 rounded-[2rem] flex items-center gap-6">
+                  <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                     <ShieldCheck className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest print:text-gray-500">Estimated Wastage</p>
-                    <p className="text-xl font-black text-gray-900">{formatCurrency(quote.summary?.totalWastageAmount || 0)}</p>
+                     <p className="text-[11px] font-black uppercase tracking-widest text-[#2d221c]">Woodflex Quality Guarantee</p>
+                     <p className="text-[10px] text-gray-500">Industry-leading structural and finish standards apply.</p>
                   </div>
+               </div>
+            </div>
+          </div>
+
+          {/* Page 1 Footer */}
+          <div className="mt-auto pt-16 border-t border-amber-900/10 grid grid-cols-2 gap-10 opacity-70">
+             <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-[#2d221c] uppercase tracking-[0.3em]">Commercial Footnote</h4>
+                <div className="text-[11px] text-gray-500 space-y-1.5 font-medium leading-relaxed">
+                   <p>• Validity: 15 Working Days from the issue date marked above.</p>
+                   <p>• Payment: 50% Advance with Purchase Order, 50% Post Dispatch.</p>
+                   <p>• GST {quote.gstPercent || 18}% extra as per current government mandates.</p>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-xl print:p-0 print:bg-white">
-                  <p className="text-xs font-medium text-gray-500 leading-relaxed italic print:not-italic">
-                    "This represents lost value across raw materials. Target reduction via nesting optimization."
-                  </p>
+             </div>
+             <div className="text-right space-y-6">
+                <div className="space-y-2">
+                   <h4 className="text-[10px] font-black text-[#2d221c] uppercase tracking-[0.3em]">Woodflex Private Limited</h4>
+                   <p className="text-[10px] text-gray-400 font-medium leading-relaxed">
+                     Modern Craftsmanship for Premium Residential <br/> & High-Output Retail Environments.
+                   </p>
                 </div>
+                <div className="flex justify-end gap-3 text-[10px] font-black text-amber-800">
+                   <span className="px-4 py-2 bg-amber-50 rounded-lg">CALCULATED AT FACTORY</span>
+                   <span className="px-4 py-2 bg-[#2d221c] text-white rounded-lg uppercase tracking-widest">woodflex.in</span>
+                </div>
+             </div>
+          </div>
+        </div>
+
+        {/* =================================================================== */}
+        {/* PAGE 2: TECHNICAL COSTING BREAKDOWN                               */}
+        {/* =================================================================== */}
+        <div className="p-16 md:p-24 bg-[#fafaf9] border-t-8 border-white min-h-[1100px] flex flex-col">
+          <div className="bg-grain absolute inset-0 opacity-[0.02] pointer-events-none"></div>
+
+          <div className="flex justify-between items-end mb-20 border-b-2 border-amber-900/10 pb-10">
+            <div>
+               <p className="text-[9px] font-black text-amber-700 uppercase tracking-[0.5em] mb-3">Costing Intelligence</p>
+               <h2 className="text-4xl font-serif text-[#2d221c] tracking-tight">Audit Breakdown</h2>
+               <p className="text-xs text-amber-900/40 font-bold uppercase tracking-[0.2em] mt-2 italic">Strictly for Internal Analysis — #{quote.refCode}</p>
+            </div>
+            <div className="text-right space-y-1">
+              <Printer className="w-5 h-5 text-amber-900/10 ml-auto mb-2" />
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Page 02 of 02</p>
+            </div>
+          </div>
+
+          <div className="space-y-16 flex-1">
+            {/* 1. WOOD BREAKDOWN */}
+            <section className="bg-white p-8 rounded-[2rem] shadow-sm border border-amber-900/5">
+              <h3 className="text-[11px] font-black text-[#2d221c] uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                <TreesIcon className="w-4 h-4 text-amber-600" /> Structural: Solid Wood
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-amber-900/5">
+                      <th className="py-4 pl-4 text-[9px] font-black text-amber-900/30 uppercase tracking-widest">Component / Material</th>
+                      <th className="py-4 text-[9px] font-black text-amber-900/30 uppercase tracking-widest">Band (LxWxT)</th>
+                      <th className="py-2 text-[9px] font-black text-amber-900/30 uppercase tracking-widest text-center">Qty</th>
+                      <th className="py-4 text-[9px] font-black text-amber-900/30 uppercase tracking-widest text-right">Gun Foot</th>
+                      <th className="py-4 text-[9px] font-black text-amber-900/30 uppercase tracking-widest text-right">Line Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-900/[0.03]">
+                    {quote.woodBreakdown.map((row) => (
+                      <tr key={row.id} className="group">
+                        <td className="py-5 pl-4">
+                           <p className="text-xs font-bold text-gray-900">{row.componentName}</p>
+                           <p className="text-[10px] text-amber-700 font-medium uppercase tracking-tight">{row.woodType}</p>
+                        </td>
+                        <td className="py-5 text-xs text-gray-500 font-medium">
+                           {row.length_ft}' × {row.width_in}" × {row.thickness_in}"
+                        </td>
+                        <td className="py-5 text-center px-4">
+                           <span className="text-xs font-black bg-amber-50 text-amber-900 px-3 py-1 rounded-lg border border-amber-900/5">{row.quantity}</span>
+                        </td>
+                        <td className="py-5 text-right font-mono text-[11px] text-gray-400 italic">{row.gun_foot}gf</td>
+                        <td className="py-5 text-right pr-4">
+                           <p className="text-xs font-black text-gray-900">{formatCurrency(row.total_cost)}</p>
+                           <p className="text-[9px] font-bold text-amber-900/20 uppercase">@{row.rate_per_gf}/gf</p>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-amber-900/[0.02]">
+                       <td colSpan={4} className="py-5 pl-6 text-[10px] font-black text-[#2d221c] uppercase tracking-widest">Total Solid Wood Investment</td>
+                       <td className="py-5 text-right pr-6 font-black text-[#2d221c] text-sm">{formatCurrency(quote.summary?.totalWood || 0)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
+            </section>
+
+            {/* 2. PLYWOOD & BOARDS */}
+            <section className="bg-white p-8 rounded-[2rem] shadow-sm border border-amber-900/5">
+              <h3 className="text-[11px] font-black text-[#2d221c] uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                <Layers className="w-4 h-4 text-blue-600" /> Structural: Engineering Board
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-amber-900/5">
+                      <th className="py-4 pl-4 text-[9px] font-black text-amber-900/30 uppercase tracking-widest">Component / Category</th>
+                      <th className="py-4 text-[9px] font-black text-amber-900/30 uppercase tracking-widest">Specification</th>
+                      <th className="py-4 text-[9px] font-black text-amber-900/30 uppercase tracking-widest text-center">Net SF</th>
+                      <th className="py-4 text-[9px] font-black text-amber-900/30 uppercase tracking-widest text-right">Rate + Wastage</th>
+                      <th className="py-4 text-[9px] font-black text-amber-900/30 uppercase tracking-widest text-right">Line Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-900/[0.03]">
+                    {quote.plyBreakdown.map((row) => (
+                      <tr key={row.id}>
+                        <td className="py-5 pl-4">
+                           <p className="text-xs font-bold text-gray-900">{row.componentName}</p>
+                           <p className="text-[10px] text-blue-700 font-medium uppercase tracking-tight">{row.plyCategory}</p>
+                        </td>
+                        <td className="py-5 text-xs text-gray-500 font-medium">{row.thickness_mm}MM · {row.cut_length_in}×{row.cut_width_in}in</td>
+                        <td className="py-5 text-center"><span className="text-xs font-bold text-gray-900">{row.sqft}</span></td>
+                        <td className="py-5 text-right"><span className="text-[11px] text-gray-400 font-medium">₹{row.rate_per_sqft} + {row.wastage_percent}%</span></td>
+                        <td className="py-5 text-right pr-4 font-black text-gray-900 text-xs">{formatCurrency(row.total_cost)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-blue-900/[0.02]">
+                       <td colSpan={4} className="py-5 pl-6 text-[10px] font-black text-blue-900 uppercase tracking-widest">Total Plywood Component Investment</td>
+                       <td className="py-5 text-right pr-6 font-black text-blue-900 text-sm">{formatCurrency(quote.summary?.totalPly || 0)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </section>
+
+            {/* 3. SOFT MATERIALS & FOAM */}
+            <section className="bg-white p-8 rounded-[2rem] shadow-sm border border-amber-900/5">
+              <h3 className="text-[11px] font-black text-[#2d221c] uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                <Wind className="w-4 h-4 text-orange-600" /> Comfort: Foam & Padding
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-amber-900/5">
+                      <th className="py-4 pl-4 text-[9px] font-black text-amber-900/30 uppercase tracking-widest">Part / Specs</th>
+                      <th className="py-4 text-[10px] text-center px-4">Qty</th>
+                      <th className="py-4 text-right text-[9px] font-black text-amber-900/30 uppercase tracking-widest">Area SF</th>
+                      <th className="py-4 text-right text-[9px] font-black text-amber-900/30 uppercase tracking-widest">Unit Price</th>
+                      <th className="py-4 text-right text-[9px] font-black text-amber-900/30 uppercase tracking-widest">Line Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-900/[0.03]">
+                    {quote.foamBreakdown?.map((row) => (
+                      <tr key={row.id}>
+                        <td className="py-5 pl-4">
+                           <p className="text-xs font-bold text-gray-900">{row.componentName}</p>
+                           <p className="text-[9px] text-orange-700 font-black uppercase tracking-widest opacity-60">{row.foamType} | {row.specification} | {row.thickness_in}"</p>
+                        </td>
+                        <td className="py-5 text-center px-4"><span className="text-xs font-black text-gray-900">{row.quantity}</span></td>
+                        <td className="py-5 text-right font-mono text-[11px] text-gray-400">{row.sqft}</td>
+                        <td className="py-5 text-right text-[11px] font-medium text-gray-400">₹{row.rate_per_sqft}/sf</td>
+                        <td className="py-5 text-right pr-4 font-black text-gray-900 text-xs">{formatCurrency(row.total_cost)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-orange-900/[0.02]">
+                       <td colSpan={4} className="py-5 pl-6 text-[10px] font-black text-orange-900 uppercase tracking-widest">Total Padding & Comfort Investment</td>
+                       <td className="py-5 text-right pr-6 font-black text-orange-900 text-sm">{formatCurrency(quote.summary?.totalFoam || 0)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </section>
+
+            {/* 4. LABOUR & FACTORY AUDIT */}
+            <div className="grid md:grid-cols-2 gap-10">
+               <div className="bg-white p-10 rounded-[2.5rem] border border-amber-900/5 shadow-sm space-y-8">
+                  <h3 className="text-[10px] font-black text-[#2d221c] uppercase tracking-[0.4em] flex items-center gap-3">
+                     <Activity className="w-4 h-4 text-emerald-500" /> Craftsmanship Allocation
+                  </h3>
+                  <div className="space-y-4">
+                     {[
+                       { label: 'Carpenter Guild', val: quote.labour?.carpenter },
+                       { label: 'Surface / Polish', val: quote.labour?.polish },
+                       { label: 'Upholstery Labor', val: quote.labour?.foam },
+                       { label: 'Fittings & Misc', val: quote.miscellaneous?.amount }
+                     ].map((l, i) => (
+                       <div key={i} className="flex justify-between items-center group">
+                          <span className="text-xs font-bold text-gray-400 group-hover:text-amber-900 transition-colors uppercase tracking-widest text-[9px]">{l.label}</span>
+                          <span className="text-sm font-black text-[#2d221c] tabular-nums">{formatCurrency(l.val || 0)}</span>
+                       </div>
+                     ))}
+                     <div className="pt-6 border-t border-amber-900/5 flex justify-between items-end">
+                        <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Audit Total Services</span>
+                        <span className="text-xl font-serif text-[#2d221c] underline decoration-amber-500/30 decoration-4 underline-offset-8">
+                           {formatCurrency((quote.summary?.totalLabour || 0) + (quote.summary?.totalMisc || 0))}
+                        </span>
+                     </div>
+                  </div>
+               </div>
+
+               <div className="bg-[#2d221c] p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden text-white flex flex-col justify-between">
+                  <div className="bg-grain absolute inset-0 opacity-10 pointer-events-none"></div>
+                  <div className="relative z-10">
+                    <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em] mb-10">Internal Cost Audit</h3>
+                    
+                    <div className="space-y-4">
+                       <div className="flex justify-between text-xs text-white/40 uppercase tracking-widest font-black text-[9px]">
+                          <span>Net Materials</span>
+                          <span>{formatCurrency(quote.summary?.totalMaterials)}</span>
+                       </div>
+                       <div className="flex justify-between text-xs text-white/40 uppercase tracking-widest font-black text-[9px]">
+                          <span>Net Services</span>
+                          <span>{formatCurrency((quote.summary?.totalLabour || 0) + (quote.summary?.totalMisc || 0))}</span>
+                       </div>
+                       <div className="flex justify-between text-xs text-amber-500 font-bold uppercase tracking-widest text-[9px]">
+                          <span>Factory O/H ({quote.factoryExpensePercent}%)</span>
+                          <span>{formatCurrency(quote.summary?.factoryExpenseAmount)}</span>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="relative z-10 pt-10 border-t border-white/5 space-y-2 mt-auto">
+                     <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em]">Total Production Cost</p>
+                     <p className="text-4xl font-serif tracking-tight text-white mb-6 underline decoration-amber-500 decoration-1 underline-offset-[10px]">
+                        {formatCurrency(quote.summary?.totalInternalCost)}
+                     </p>
+                     <div className="flex justify-between items-center text-[10px] font-black uppercase text-white/30 tracking-widest">
+                        <span>Factory Wastage Impact:</span>
+                        <span className="text-amber-200">₹{quote.summary?.totalWastageAmount?.toLocaleString()} INCLD</span>
+                     </div>
+                  </div>
+               </div>
             </div>
 
-            {/* Approval Section (Only visible in Print) */}
-            <div className="hidden print:block border-t-2 border-gray-200 pt-12 mt-12 break-inside-avoid">
-              <h3 className="text-sm font-bold uppercase tracking-[0.2em] mb-8 text-center text-gray-400">Formal Approval</h3>
-              <div className="grid grid-cols-2 gap-12">
-                <div className="text-center">
-                  <div className="h-px bg-gray-300 mb-2"></div>
-                  <p className="text-xs font-bold text-gray-900 uppercase">Founder / Proprietor</p>
-                  <p className="text-[10px] text-gray-400 lowercase mt-1">sign & date</p>
-                </div>
-                <div className="text-center">
-                  <div className="h-px bg-gray-300 mb-2"></div>
-                  <p className="text-xs font-bold text-gray-900 uppercase">Production Head</p>
-                  <p className="text-[10px] text-gray-400 lowercase mt-1">sign & date</p>
-                </div>
-              </div>
-              <div className="mt-12 pt-6 border-t border-gray-100 text-center">
-                <p className="text-[10px] text-gray-300 uppercase tracking-widest">Woodflex Costing Engine v1.2 - Internal Use Only</p>
-              </div>
+            {/* Signature Block */}
+            <div className="pt-24 mt-auto">
+               <div className="grid grid-cols-2 gap-32">
+                  <div className="space-y-6">
+                     <div className="h-0.5 bg-amber-900/10 w-full relative">
+                        <div className="absolute top-0 left-0 w-8 h-0.5 bg-amber-500"></div>
+                     </div>
+                     <div>
+                        <p className="text-[10px] font-black text-[#2d221c] uppercase tracking-[0.3em]">Lead Architect Audit</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Industrial Valuation Unit</p>
+                     </div>
+                  </div>
+                  <div className="space-y-6 text-right">
+                     <div className="h-0.5 bg-amber-900/10 w-full relative">
+                        <div className="absolute top-0 right-0 w-8 h-0.5 bg-amber-500"></div>
+                     </div>
+                     <div>
+                        <p className="text-[10px] font-black text-[#2d221c] uppercase tracking-[0.3em]">Managing Director Approval</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Woodflex Bespoke Private Limited</p>
+                     </div>
+                  </div>
+               </div>
             </div>
-
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        @media print {
+          .page-break-after-always {
+            page-break-after: always;
+          }
+          body {
+            background: white !important;
+          }
+          /* Ensure rounded corners and shadows dont break on some browsers */
+          #pdf-content {
+            box-shadow: none !important;
+            border-radius: 0 !important;
+          }
+        }
+        .font-serif {
+           font-family: var(--font-instrument-serif), Georgia, serif;
+        }
+        .bg-grain {
+          background-image: url("https://www.transparenttextures.com/patterns/p6.png");
+        }
+      `}</style>
     </div>
-  </div>
   );
 }

@@ -1,6 +1,5 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/admin-setup/page": "app/admin-setup/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/login/page": "app/login/page.js",
   "/masters/page": "app/masters/page.js",
@@ -9,5 +8,6 @@
   "/quote/new/page": "app/quote/new/page.js",
   "/quote/view/[id]/page": "app/quote/view/[id]/page.js",
   "/quotes/page": "app/quotes/page.js",
-  "/references/page": "app/references/page.js"
+  "/references/page": "app/references/page.js",
+  "/admin-setup/page": "app/admin-setup/page.js"
 }

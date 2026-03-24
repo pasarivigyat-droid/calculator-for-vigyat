@@ -77,17 +77,30 @@ const parsePlywoodReport = (csv) => {
 };
 
 // --- RUN TESTS ---
-const woodCsv = fs.readFileSync('wood_rate_template.csv', 'utf8');
-const woodParsed = parseWoodMatrix(woodCsv);
-console.log('WOOD PARSE TEST:', woodParsed.length > 0 ? `SUCCESS (${woodParsed.length} records)` : 'FAILED');
-if (woodParsed.length > 0) console.log('Sample Wood Record:', woodParsed[0]);
+console.log('\n--- VERIFYING MASTER CSV DATA ---');
 
-const plyCsv = fs.readFileSync('plywood_rate_template.csv', 'utf8');
-const plyParsed = parsePlywoodReport(plyCsv);
-console.log('PLYWOOD PARSE TEST:', plyParsed.length > 0 ? `SUCCESS (${plyParsed.length} records)` : 'FAILED');
-if (plyParsed.length > 0) console.log('Sample Plywood Record:', plyParsed[0]);
+try {
+  const woodCsv = fs.readFileSync('wood_masters_flat.csv', 'utf8');
+  const woodParsed = parseCSV(woodCsv);
+  console.log('WOOD CSV PARSE TEST:', woodParsed.length > 0 ? `SUCCESS (${woodParsed.length} records)` : 'FAILED');
+  
+  // Specific check for SAGWOOD 4x1.5 (2.5ft - 2.75ft)
+  const sagRecord = woodParsed.find(r => 
+    r.wood_type === 'SAGWOOD' && 
+    parseFloat(r.length_from_ft) === 2.5 && 
+    parseFloat(r.width_in) === 4 && 
+    parseFloat(r.thickness_in) === 1.5
+  );
+  
+  if (sagRecord) {
+    console.log(`✅ FOUND SAGWOOD 4x1.5@2.5ft: Rate = ₹${sagRecord.rate_per_gf}/GF`);
+  } else {
+    console.log('❌ MISSING SAGWOOD 4x1.5@2.5ft in wood_masters_flat.csv');
+  }
 
-const foamCsv = fs.readFileSync('foam_rate_template.csv', 'utf8');
-// Foam uses a heuristic regex search, so we'll just check if it finds the Specs
-const foamMatches = foamCsv.match(/N-\d+/g);
-console.log('FOAM TEMPLATE CHECK:', foamMatches ? `SUCCESS (Found ${foamMatches.length} specs)` : 'FAILED');
+  const plyCsv = fs.readFileSync('ply_masters_flat.csv', 'utf8');
+  const plyParsed = parseCSV(plyCsv);
+  console.log('PLYWOOD CSV PARSE TEST:', plyParsed.length > 0 ? `SUCCESS (${plyParsed.length} records)` : 'FAILED');
+} catch (err) {
+  console.error('ERROR RUNNING TESTS:', err.message);
+}

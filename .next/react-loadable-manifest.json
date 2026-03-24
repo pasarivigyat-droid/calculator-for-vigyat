@@ -15,13 +15,5 @@
   "..\\node_modules\\jspdf\\dist\\jspdf.es.min.js -> html2canvas": {
     "id": 1173,
     "files": []
-  },
-  "app\\masters\\page.tsx -> @/lib/firebase/config": {
-    "id": 5419,
-    "files": []
-  },
-  "app\\masters\\page.tsx -> firebase/firestore": {
-    "id": 9842,
-    "files": []
   }
 }

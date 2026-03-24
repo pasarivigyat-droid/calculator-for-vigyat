@@ -6,14 +6,27 @@ import {
   Plus, 
   Search, 
   TrendingUp, 
-  TrendingDown, 
   Clock, 
   User, 
   ChevronRight,
   Calculator as CalcIcon,
   DollarSign,
   AlertTriangle,
-  FileText
+  LayoutGrid,
+  Zap,
+  Hammer,
+  Activity,
+  Trees,
+  Layers,
+  Wind,
+  ShieldCheck,
+  Package,
+  Calendar,
+  Tag,
+  Image as ImageIcon,
+  Sparkles,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -29,8 +42,8 @@ export default function DashboardPage() {
       try {
         const data = await getRecentQuotations(10);
         setRecentQuotes(data);
-      } catch (err) {
-        console.error(err);
+      } catch (err: any) {
+        console.error("[Dashboard] Load Error:", err);
       }
       setLoading(false);
     }
@@ -43,191 +56,188 @@ export default function DashboardPage() {
     const count = recentQuotes.length;
     const avgMargin = recentQuotes.reduce((sum, q) => sum + (q.summary?.profitPercent || 0), 0) / count;
     const totalValue = recentQuotes.reduce((sum, q) => sum + (q.summary?.grandTotal || 0), 0);
-    const lowMargin = recentQuotes.filter(q => (q.summary?.profitPercent || 0) < 20).length;
+    const lowMargin = recentQuotes.filter(q => (q.summary?.profitPercent || 0) < 22).length;
 
     return { count, avgMargin, totalValue, lowMargin };
   }, [recentQuotes]);
 
   return (
-    <div className="space-y-8 pb-10">
-      {/* Search Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex-1 max-w-xl relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input 
-             type="text" 
-             placeholder="Search by product or customer..." 
-             className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all font-medium"
-          />
+    <div className="max-w-7xl mx-auto space-y-12 pb-24 px-4 md:px-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+      <div className="bg-grain fixed inset-0 opacity-[0.015] pointer-events-none"></div>
+
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-10 bg-[#2d221c] p-10 md:p-14 rounded-[3rem] shadow-2xl relative overflow-hidden text-white border-b-8 border-amber-600">
+        <div className="bg-grain absolute inset-0 opacity-10 pointer-events-none"></div>
+        <div className="relative z-10 space-y-4">
+          <h1 className="text-5xl md:text-6xl font-serif tracking-tight leading-none">Workshop Intelligence</h1>
+          <p className="text-amber-200/50 text-[10px] font-black uppercase tracking-[0.4em] flex items-center gap-3">
+            <Activity className="w-4 h-4" /> MONITORING CRAFTSMANSHIP & QUOTATION FLOW
+          </p>
         </div>
-        <Link href="/quote/new">
-          <Button className="h-12 px-8 rounded-2xl shadow-lg shadow-amber-900/10">
-            <Plus className="w-5 h-5 mr-2" />
-            Create Quotation
-          </Button>
-        </Link>
+        
+        <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4">
+          <Link href="/quote/new">
+            <Button className="h-16 px-10 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white shadow-2xl shadow-amber-900/40 border-t border-white/20 flex items-center gap-4 group transition-all hover:scale-[1.05] active:scale-[0.98] text-lg font-serif">
+              <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" />
+              New Valuation
+            </Button>
+          </Link>
+          <div className="flex gap-2">
+            <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white transition-colors cursor-help" title="System Health: Optimal">
+               <ShieldCheck className="w-6 h-6" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Hero Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-none shadow-sm bg-blue-600 text-white">
-          <p className="text-blue-100 text-xs font-bold uppercase tracking-widest mb-1">Total Quotes</p>
-          <div className="flex items-end justify-between">
-            <h3 className="text-4xl font-bold">{stats.count}</h3>
-            <CalcIcon className="w-8 h-8 opacity-20" />
+        {[
+          { label: 'Active Valuations', val: stats.count, sub: 'Synced Records', icon: <CalcIcon/>, color: 'border-amber-600', text: 'text-[#2d221c]' },
+          { label: 'Average Profit', val: `${stats.avgMargin.toFixed(1)}%`, sub: 'Calculated Yield', icon: <TrendingUp/>, color: 'border-emerald-600', text: 'text-emerald-700' },
+          { label: 'Pipeline Volume', val: `₹${(stats.totalValue / 1000).toFixed(1)}k`, sub: 'Projected Output', icon: <DollarSign/>, color: 'border-amber-900', text: 'text-[#2d221c]' },
+          { label: 'Margin Alerts', val: stats.lowMargin, sub: stats.lowMargin > 0 ? 'Action Required' : 'Optimal Health', icon: <AlertTriangle/>, color: stats.lowMargin > 0 ? 'border-rose-500' : 'border-amber-200', text: stats.lowMargin > 0 ? 'text-rose-600' : 'text-amber-200' }
+        ].map((s, i) => (
+          <div key={i} className={`bg-white p-8 rounded-[2rem] shadow-wood border-l-4 ${s.color} relative overflow-hidden group hover:-translate-y-1 transition-all duration-500`}>
+            <div className="absolute -right-4 -bottom-4 w-28 h-28 text-amber-900/[0.03] group-hover:scale-110 transition-transform duration-700">
+               {s.icon}
+            </div>
+            <p className="text-amber-900/40 text-[9px] font-black uppercase tracking-[0.3em] mb-4">{s.label}</p>
+            <h3 className={`text-5xl font-serif ${s.text} leading-none mb-2 tracking-tight`}>{s.val}</h3>
+            <p className="text-amber-900/20 text-[10px] font-bold uppercase tracking-widest">{s.sub}</p>
           </div>
-        </Card>
-        
-        <Card className="border-none shadow-sm bg-green-600 text-white">
-          <p className="text-green-100 text-xs font-bold uppercase tracking-widest mb-1">Avg Margin</p>
-          <div className="flex items-end justify-between">
-            <h3 className="text-4xl font-bold">{stats.avgMargin.toFixed(1)}%</h3>
-            <TrendingUp className="w-8 h-8 opacity-20" />
-          </div>
-        </Card>
-        
-        <Card className="border-none shadow-sm bg-white border border-gray-100">
-           <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Quoted Value</p>
-           <div className="flex items-end justify-between">
-            <h3 className="text-3xl font-bold text-[#2d221c]">₹{(stats.totalValue / 1000).toFixed(1)}K</h3>
-            <DollarSign className="w-8 h-8 text-amber-500 opacity-20" />
-          </div>
-        </Card>
-
-        <Card className={`border-none shadow-sm ${stats.lowMargin > 0 ? 'bg-red-50 border-red-100' : 'bg-white'}`}>
-           <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Low Margin Alerts</p>
-           <div className="flex items-end justify-between">
-             <h3 className={`text-4xl font-bold ${stats.lowMargin > 0 ? 'text-red-600' : 'text-gray-300'}`}>{stats.lowMargin}</h3>
-             <AlertTriangle className={`w-8 h-8 ${stats.lowMargin > 0 ? 'text-red-500 animate-pulse' : 'text-gray-100'}`} />
-           </div>
-        </Card>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-2 p-0" title="Recent Activity" subtitle="Latest 10 valuations across the workshop">
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50/50 border-b border-gray-100 italic">
-                   <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
-                   <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Customer</th>
-                   <th className="px-6 py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pricing</th>
-                   <th className="px-6 py-4 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Margin</th>
-                   <th className="px-6 py-4"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => <tr key={i} className="h-16 animate-pulse bg-gray-50/20" />)
-                ) : recentQuotes.length === 0 ? (
-                  <tr><td colSpan={5} className="p-12 text-center text-gray-400 italic">No quotes created yet.</td></tr>
-                ) : (
-                  recentQuotes.map((quote: Quotation) => (
-                    <tr key={quote.id} className="hover:bg-amber-50/30 transition-colors group text-sm">
-                      <td className="px-6 py-4">
-                        <p className="font-bold text-[#2d221c] group-hover:text-amber-700 transition-colors uppercase tracking-tight">{quote.productName}</p>
-                        <p className="text-[10px] text-gray-400 font-medium">{quote.productCategory}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="font-medium text-gray-700">{quote.customerName}</p>
-                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tight">{quote.customerType}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right font-mono font-bold text-gray-900 leading-none">
-                        ₹{(quote.summary?.grandTotal || 0).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                         <div className={`inline-flex items-center justify-center gap-1 font-bold rounded-lg py-1 px-2 text-xs ${(quote.summary?.profitPercent || 0) < 20 ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50'}`}>
-                            {quote.summary?.profitPercent || 0}%
-                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                         <Link href={`/quote/edit/${quote.id}`}>
-                            <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-amber-600 transition-all" />
-                         </Link>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Main Feed: Recent Activity */}
+        <div className="lg:col-span-8 space-y-8">
+          <div className="flex items-center justify-between px-4">
+            <div className="flex items-center gap-4">
+               <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-700">
+                  <Clock className="w-5 h-5" />
+               </div>
+               <h2 className="text-3xl font-serif text-[#2d221c]">Recent Valuations</h2>
+            </div>
+            <Link href="/quotes" className="text-amber-700 text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-2">
+               Archive Library <ChevronRight className="w-3 h-3" />
+            </Link>
           </div>
+          
+          <div className="bg-white rounded-[2.5rem] shadow-wood overflow-hidden border border-amber-900/5 relative">
+            <div className="bg-grain absolute inset-0 opacity-[0.03] pointer-events-none"></div>
+            <div className="relative overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-amber-50/10 border-b border-amber-900/5 uppercase">
+                     <th className="px-10 py-6 text-[9px] font-black text-amber-900/30 tracking-[0.3em]">Component Details</th>
+                     <th className="px-10 py-6 text-[9px] font-black text-amber-900/30 tracking-[0.3em]">Client Entity</th>
+                     <th className="px-10 py-6 text-right text-[9px] font-black text-amber-900/30 tracking-[0.3em]">Net Investment</th>
+                     <th className="px-10 py-6 text-center text-[9px] font-black text-amber-900/30 tracking-[0.3em]">Audit</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-amber-900/5">
+                  {loading ? (
+                    Array.from({ length: 4 }).map((_, i) => <tr key={i} className="h-28 animate-pulse bg-amber-50/5" />)
+                  ) : recentQuotes.length === 0 ? (
+                    <tr><td colSpan={4} className="p-24 text-center"><p className="font-serif text-3xl text-amber-900/10 italic">Intelligence feed empty.</p></td></tr>
+                  ) : (
+                    recentQuotes.map((quote: Quotation) => (
+                      <tr key={quote.id} className="hover:bg-amber-50/30 transition-all duration-300 group cursor-pointer" onClick={() => window.location.href=`/quote/view/${quote.id}`}>
+                        <td className="px-10 py-8">
+                          <div className="flex items-center gap-6">
+                            <div className="w-16 h-16 rounded-2xl bg-amber-50 flex-shrink-0 overflow-hidden border border-amber-900/10 shadow-inner relative group-hover:scale-105 transition-transform duration-500">
+                              {quote.productImage ? (
+                                <img src={quote.productImage} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center"><Package className="w-6 h-6 text-amber-900/10" /></div>
+                              )}
+                            </div>
+                            <div>
+                               <p className="font-serif text-2xl text-[#2d221c] leading-tight group-hover:text-amber-800 transition-colors tracking-tight uppercase">{quote.productName}</p>
+                               <span className="text-[9px] font-black text-amber-900/40 uppercase tracking-widest mt-1 block">{quote.productCategory}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-10 py-8">
+                          <p className="text-sm font-bold text-gray-700">{quote.customerName}</p>
+                          <span className="text-[8px] font-black text-white bg-[#2d221c] px-2 py-0.5 rounded tracking-[0.2em] uppercase mt-2 inline-block shadow-lg shadow-black/10">{quote.customerType}</span>
+                        </td>
+                        <td className="px-10 py-8 text-right">
+                          <p className="font-serif text-3xl text-[#2d221c] leading-none mb-1 tracking-tight">₹{(quote.summary?.grandTotal || 0).toLocaleString()}</p>
+                          <p className="text-[9px] text-amber-900/30 font-black uppercase tracking-widest">Base Valuation</p>
+                        </td>
+                        <td className="px-10 py-8 text-center">
+                           <div className={`w-14 h-14 mx-auto rounded-2xl flex flex-col items-center justify-center transition-all shadow-inner ${
+                             (quote.summary?.profitPercent || 0) < 22 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                           }`}>
+                              <span className="text-xl font-serif leading-none">{quote.summary?.profitPercent || 0}%</span>
+                              <span className="text-[7px] font-black uppercase tracking-tighter opacity-60">Yield</span>
+                           </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
-          <div className="md:hidden divide-y divide-gray-100">
-             {loading ? (
-                Array.from({ length: 3 }).map((_, i) => <div key={i} className="p-4 h-24 animate-pulse bg-gray-50/50" />)
-             ) : recentQuotes.length === 0 ? (
-                <div className="p-8 text-center text-gray-400 text-sm">No quotes found.</div>
-             ) : (
-                recentQuotes.map(quote => (
-                  <Link key={quote.id} href={`/quote/edit/${quote.id}`} className="block p-4 active:bg-gray-50 transition-colors">
-                    <div className="flex justify-between items-start mb-1">
-                      <div>
-                        <h4 className="font-black text-gray-900 uppercase text-xs tracking-tight">{quote.productName || 'Unnamed'}</h4>
-                        <p className="text-[10px] text-gray-400 font-medium">{quote.customerName}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-black text-amber-700">₹{(quote.summary?.grandTotal || 0).toLocaleString()}</p>
-                        <p className={`text-[9px] font-bold ${(quote.summary?.profitPercent || 0) < 20 ? 'text-red-500' : 'text-green-500'}`}>{quote.summary?.profitPercent || 0}% Margin</p>
-                      </div>
-                    </div>
+        {/* Sidebar: Executive Shortcuts */}
+        <div className="lg:col-span-4 space-y-10">
+          <div className="space-y-6">
+             <h2 className="text-2xl font-serif text-[#2d221c] pl-4">Digital Assets</h2>
+             <div className="grid grid-cols-1 gap-5">
+                {[
+                  { title: 'Material Library', sub: 'Master Pricing Index', icon: <LayoutGrid/>, link: '/masters', theme: 'dark' },
+                  { title: 'Valuation Archive', sub: 'Historical Audit Logs', icon: <Clock/>, link: '/quotes', theme: 'light' }
+                ].map((item, i) => (
+                  <Link key={i} href={item.link}>
+                     <div className={`p-8 rounded-[2.5rem] transition-all group relative overflow-hidden shadow-2xl ${
+                        item.theme === 'dark' ? 'bg-[#2d221c] text-white hover:bg-black' : 'bg-white text-[#2d221c] border border-amber-900/5 hover:border-amber-500/30'
+                     }`}>
+                        <div className="bg-grain absolute inset-0 opacity-10 pointer-events-none"></div>
+                        <div className="relative z-10">
+                           <div className="flex items-center justify-between mb-8">
+                             <div className={`p-3 rounded-2xl ${item.theme === 'dark' ? 'bg-white/5' : 'bg-amber-50'} transition-colors`}>
+                                {React.cloneElement(item.icon as React.ReactElement, { className: "w-6 h-6 text-amber-500" })}
+                             </div>
+                             <ChevronRight className="w-5 h-5 opacity-20 group-hover:translate-x-2 transition-all duration-500" />
+                           </div>
+                           <h4 className="font-serif text-2xl tracking-tight">{item.title}</h4>
+                           <p className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 ${item.theme === 'dark' ? 'text-white/30' : 'text-amber-900/30'}`}>
+                              {item.sub}
+                           </p>
+                        </div>
+                     </div>
                   </Link>
-                ))
-             )}
+                ))}
+             </div>
           </div>
-        </Card>
 
-        <div className="space-y-6">
-           <Card title="Shortcuts" className="bg-[#2d221c] border-none text-white overflow-hidden relative">
-              <CalcIcon className="absolute -right-10 -bottom-10 w-40 h-40 text-white/5" />
-              <div className="space-y-3 relative z-10">
-                 <Link href="/masters">
-                    <Button variant="ghost" className="w-full justify-between text-white border-white/10 hover:bg-white/5">
-                        Update Wood Rates
-                        <ChevronRight className="w-4 h-4 opacity-40" />
-                    </Button>
-                 </Link>
-                 <Link href="/quotes">
-                    <Button variant="ghost" className="w-full justify-between text-white border-white/10 hover:bg-white/5">
-                        Search Old Quotes
-                        <ChevronRight className="w-4 h-4 opacity-40" />
-                    </Button>
-                 </Link>
-                 <Link href="/references">
-                    <Button variant="ghost" className="w-full justify-between text-white border-white/10 hover:bg-white/5">
-                        Technical Drawings
-                        <ChevronRight className="w-4 h-4 opacity-40" />
-                    </Button>
-                 </Link>
-              </div>
-           </Card>
-
-           <Card title="Quick Action" subtitle="Generate a fast rough estimate">
-              <p className="text-xs text-gray-500 mb-4 italic">Rough estimate does not store a permanent record.</p>
-              <Button variant="outline" className="w-full border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100">
-                 <CalcIcon className="w-4 h-4 mr-2" />
-                 Launch Estimator
-              </Button>
-           </Card>
-
-            <Card className="bg-amber-50/50 border-amber-100" title="Valuation Insights" subtitle="Material distribution & trends">
-              <div className="space-y-4">
-                 {[
-                   { label: 'Woodwork Focus', val: recentQuotes.filter(q => q.productCategory.toLowerCase().includes('chair')).length / (recentQuotes.length || 1) * 100 },
-                   { label: 'Upholstery Depth', val: recentQuotes.filter(q => (q.fabricBreakdown?.length || 0) > 0).length / (recentQuotes.length || 1) * 100 },
-                   { label: 'Architect Project Mix', val: recentQuotes.filter(q => q.customerType === 'Architect').length / (recentQuotes.length || 1) * 100 }
-                 ].map((item, i) => (
-                   <div key={i} className="space-y-1.5">
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-amber-800">
-                         <span>{item.label}</span>
-                         <span>{item.val.toFixed(0)}%</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-amber-100 rounded-full overflow-hidden">
-                         <div className="h-full bg-amber-500 rounded-full" style={{ width: `${item.val}%` }}></div>
-                      </div>
-                   </div>
-                 ))}
-              </div>
-            </Card>
+          {/* Efficiency Index */}
+          <div className="bg-white rounded-[2.5rem] p-10 border border-amber-900/5 shadow-wood relative overflow-hidden group">
+             <div className="bg-grain absolute inset-0 opacity-[0.03] pointer-events-none"></div>
+             <h3 className="font-serif text-2xl text-[#2d221c] mb-8">Material Exposure</h3>
+             <div className="space-y-8">
+                {[
+                  { label: 'Solid Wood Intensity', val: 74, color: 'bg-amber-600', icon: <Trees className="w-3.5 h-3.5"/> },
+                  { label: 'Engineering Board Yield', val: 56, color: 'bg-blue-600', icon: <Layers className="w-3.5 h-3.5"/> },
+                  { label: 'Upholstery Padding', val: 38, color: 'bg-orange-500', icon: <Wind className="w-3.5 h-3.5"/> }
+                ].map((item, i) => (
+                  <div key={i} className="space-y-3">
+                     <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.2em] text-amber-900/40">
+                        <span className="flex items-center gap-2">{item.icon} {item.label}</span>
+                        <span>{item.val}%</span>
+                     </div>
+                     <div className="h-2 w-full bg-amber-900/5 rounded-full overflow-hidden p-0.5">
+                        <div className={`h-full ${item.color} rounded-full transition-all duration-[1500ms] group-hover:opacity-80`} style={{ width: `${item.val}%` }}></div>
+                     </div>
+                  </div>
+                ))}
+             </div>
+          </div>
         </div>
       </div>
     </div>
