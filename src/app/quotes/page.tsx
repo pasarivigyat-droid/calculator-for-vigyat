@@ -271,7 +271,7 @@ export default function QuotesLibraryPage() {
               >
                 <div className="flex items-center gap-8">
                    <div className="w-20 h-14 rounded-2xl bg-amber-50 overflow-hidden border border-amber-900/10 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-500">
-                      {quote.productImage ? <img src={quote.productImage} className="w-full h-full object-cover" /> : <Package className="w-6 h-6 text-amber-900/5" />}
+                       {quote.productImage ? <img src={quote.productImage} alt="Project" className="w-full h-full object-cover" /> : <Package className="w-6 h-6 text-amber-900/5" />}
                    </div>
                    <div>
                       <h4 className="text-xl font-serif text-[#2d221c] tracking-tight uppercase">{quote.productName || 'Unnamed Unit'}</h4>

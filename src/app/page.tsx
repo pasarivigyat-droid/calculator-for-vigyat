@@ -148,7 +148,7 @@ export default function DashboardPage() {
                           <div className="flex items-center gap-6">
                             <div className="w-16 h-16 rounded-2xl bg-amber-50 flex-shrink-0 overflow-hidden border border-amber-900/10 shadow-inner relative group-hover:scale-105 transition-transform duration-500">
                               {quote.productImage ? (
-                                <img src={quote.productImage} className="w-full h-full object-cover" />
+                                 <img src={quote.productImage} alt="Project" className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center"><Package className="w-6 h-6 text-amber-900/10" /></div>
                               )}
