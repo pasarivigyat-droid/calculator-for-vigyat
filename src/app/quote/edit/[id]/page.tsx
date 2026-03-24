@@ -85,32 +85,44 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
   const foamTypes = useMemo(() => Array.from(new Set(foamMasters.map(m => m.foam_type))).sort(), [foamMasters]);
   const getFoamSpecs = (type: string) => foamMasters.filter(m => m.foam_type === type).map(m => m.specification).sort();
 
-  // Real-time summary using core calculation engine
-  const summary = useMemo(() => {
-    const woodProcessed = (watchedWood || []).map(r => ({
-      ...r,
-      total_cost: calculateGunFoot(r.length_ft, r.width_in, r.thickness_in, r.quantity) * (r.rate_per_gf || 0)
-    }));
-    const plyProcessed = (watchedPly || []).map(r => calculatePlyRow(r as any));
-    const foamProcessed = (watchedFoam || []).map(r => calculateFoamRow(r as any));
-    const fabricProcessed = (watchedFabric || []).map(r => calculateFabricRow(r as any));
+  // ─── AUTO-RATE LOOKUP LOGIC ───
+  useEffect(() => {
+    (watchedWood || [])?.forEach((row: any, index: number) => {
+      if (row?.isRateOverridden) return;
+      const match = findWoodMaster(row?.woodType || '', row?.length_ft || 0, row?.width_in || 0, row?.thickness_in || 0, woodMasters);
+      if (match) setValue(`woodBreakdown.${index}.rate_per_gf`, match.rate_per_gf);
+    });
+  }, [watchedWood, woodMasters, setValue]);
 
-    return calculateFinalQuotation(
-      woodProcessed as any,
-      plyProcessed as any,
-      foamProcessed as any,
-      fabricProcessed as any,
-      watchedValues.labour ? { 
-        carpenter: watchedValues.labour.carpenter || 0, 
-        polish: watchedValues.labour.polish || 0, 
-        foam: watchedValues.labour.foam || 0 
-      } : { carpenter: 0, polish: 0, foam: 0 },
-      watchedValues.miscellaneous ? { amount: watchedValues.miscellaneous.amount || 0 } : { amount: 0 },
-      watchedValues.factoryExpensePercent || 30,
-      watchedValues.markupPercent || 20,
-      watchedValues.gstPercent || 18
-    );
-  }, [watchedWood, watchedPly, watchedFoam, watchedFabric, watchedValues.labour, watchedValues.miscellaneous, watchedValues.factoryExpensePercent, watchedValues.markupPercent, watchedValues.gstPercent]);
+  useEffect(() => {
+    (watchedPly || [])?.forEach((row: any, index: number) => {
+      if (row?.isRateOverridden) return;
+      const match = findPlyMaster(row?.plyCategory || '', row?.thickness_mm || 0, plyMasters);
+      if (match) setValue(`plyBreakdown.${index}.rate_per_sqft`, match.rate_per_sqft);
+    });
+  }, [watchedPly, plyMasters, setValue]);
+
+  useEffect(() => {
+    (watchedFoam || [])?.forEach((row: any, index: number) => {
+      if (row?.isRateOverridden) return;
+      const match = findFoamMaster(row?.foamType || '', row?.specification || '', foamMasters);
+      if (match) setValue(`foamBreakdown.${index}.master_rate`, match.base_rate);
+    });
+  }, [watchedFoam, foamMasters, setValue]);
+
+  const missingRates = useMemo(() => {
+    const issues: string[] = [];
+    watchedWood?.forEach((r: any, i: number) => {
+      if (!r.isRateOverridden && (r.rate_per_gf || 0) === 0 && r.woodType) issues.push(`Wood #${i+1}: Missing rate for ${r.woodType}`);
+    });
+    watchedPly?.forEach((r: any, i: number) => {
+      if (!r.isRateOverridden && (r.rate_per_sqft || 0) === 0 && r.plyCategory) issues.push(`Ply #${i+1}: Missing rate for ${r.plyCategory}`);
+    });
+    watchedFoam?.forEach((r: any, i: number) => {
+      if (!r.isRateOverridden && (r.master_rate || 0) === 0 && r.foamType) issues.push(`Foam #${i+1}: Missing rate for ${r.foamType}`);
+    });
+    return issues;
+  }, [watchedWood, watchedPly, watchedFoam]);
 
   const onSubmit = async (data: Quotation) => {
     setIsSubmitting(true);
@@ -119,6 +131,15 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
       const plyCalc = data.plyBreakdown.map(r => calculatePlyRow(r as any));
       const foamCalc = data.foamBreakdown.map(r => calculateFoamRow(r as any));
       const fabricCalc = data.fabricBreakdown.map(r => calculateFabricRow(r as any));
+
+      const summary = calculateFinalQuotation(
+        woodCalc, plyCalc, foamCalc, fabricCalc,
+        data.labour || { carpenter: 0, polish: 0, foam: 0, total: 0 },
+        data.miscellaneous || { amount: 0, total: 0 },
+        data.factoryExpensePercent || 30,
+        data.markupPercent || 20,
+        data.gstPercent || 18
+      );
 
       const finalData = { 
         ...data, 
@@ -139,7 +160,7 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto pb-32 px-4 md:px-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <div className="max-w-4xl mx-auto pb-32 px-4 md:px-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
       <div className="bg-grain fixed inset-0 opacity-[0.015] pointer-events-none"></div>
 
       {/* Premium Stepper */}
@@ -170,9 +191,7 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-        {/* Main Workspace */}
-        <div className="lg:col-span-8 space-y-12">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
            
            {/* STEP 1: IDENTITY */}
            {step === 1 && (
@@ -404,38 +423,25 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
                        <Input label="Factory Expenses %" type="number" {...register("factoryExpensePercent", { valueAsNumber: true })} className="h-16" />
                        <Input label="Profit Margin %" type="number" {...register("markupPercent", { valueAsNumber: true })} className="h-16" />
                    </div>
-                   <div className="p-8 bg-amber-50/50 rounded-2xl border border-amber-900/5 flex items-center justify-between">
-                      <div className="space-y-1">
-                         <p className="text-xs font-serif text-amber-900 italic">Financial Efficiency Score</p>
-                         <p className="text-[9px] font-black text-amber-900/30 uppercase tracking-widest">Wastage Impact: ₹{summary.totalWastageAmount.toFixed(0)}</p>
-                      </div>
-                      <div className="text-right">
-                         <p className="text-3xl font-serif text-[#2d221c]">{summary.profitPercent}% <span className="text-sm italic text-amber-900/40">Yield</span></p>
-                      </div>
-                   </div>
                 </div>
 
                 <div className="bg-[#2d221c] p-10 rounded-[3rem] text-white space-y-8 shadow-2xl relative overflow-hidden">
                    <div className="bg-grain absolute inset-0 opacity-[0.05] pointer-events-none"></div>
                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-amber-400">Final Verification</h3>
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
-                      <div>
-                         <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2 font-black">Material</p>
-                         <p className="text-2xl font-serif">₹{summary.totalMaterials.toFixed(0)}</p>
-                      </div>
-                      <div>
-                         <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2 font-black">Craftsman</p>
-                         <p className="text-2xl font-serif">₹{summary.totalLabour.toFixed(0)}</p>
-                      </div>
-                      <div>
-                         <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2 font-black">Factory</p>
-                         <p className="text-2xl font-serif">₹{summary.factoryExpenseAmount.toFixed(0)}</p>
-                      </div>
-                      <div className="text-right">
-                         <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest mb-2 font-black">Final Yield</p>
-                         <p className="text-2xl font-serif text-amber-400">₹{summary.grandTotal.toFixed(0)}</p>
-                      </div>
-                   </div>
+                   <div className="grid grid-cols-2 md:grid-cols-3 gap-6 relative z-10">
+                       <div className="bg-white/5 p-6 rounded-2xl">
+                          <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2 font-black">Audit Status</p>
+                          <p className="text-xl font-serif">Awaiting Lock</p>
+                       </div>
+                       <div className="bg-white/5 p-6 rounded-2xl">
+                          <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2 font-black">Data Integrity</p>
+                          <p className="text-xl font-serif">Verified</p>
+                       </div>
+                       <div className="bg-white/5 p-6 rounded-2xl text-right">
+                          <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest mb-2 font-black">Production Valuation</p>
+                          <p className="text-xl font-serif text-amber-400">View Hub</p>
+                       </div>
+                    </div>
                    <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row gap-6">
                       <Button type="submit" isLoading={isSubmitting} className="flex-1 h-16 bg-white text-[#2d221c] font-serif text-2xl hover:bg-amber-50 rounded-2xl shadow-xl">
                          Update Quotation Record
@@ -461,53 +467,72 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
                 </Button>
               )}
            </div>
-        </div>
-
-        {/* Live Costing Sidebar */}
-        <div className="lg:col-span-4 lg:sticky lg:top-8 space-y-6">
-           <div className="bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-amber-900/5 shadow-2xl relative overflow-hidden">
-              <div className="bg-grain absolute inset-0 opacity-[0.02] pointer-events-none"></div>
-              <div className="relative z-10 space-y-8">
-                 <div className="flex items-center justify-between">
-                    <h4 className="text-[10px] font-black text-amber-900/30 uppercase tracking-[0.4em]">Cost Audit</h4>
-                    <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">Live Sync</span>
-                 </div>
-                 
-                 <div className="space-y-4">
-                    {[
-                      { l: 'Structure (Wood)', v: summary.totalWood, i: <Trees className="w-4 h-4"/> },
-                      { l: 'Engineered (Ply)', v: summary.totalPly, i: <Layers className="w-4 h-4"/> },
-                      { l: 'Soft Padding (Foam)', v: summary.totalFoam, i: <Wind className="w-4 h-4"/> },
-                      { l: 'Finish (Fabric)', v: summary.totalFabric, i: <Sparkles className="w-4 h-4"/> },
-                      { l: 'Craft (Labour)', v: summary.totalLabour, i: <Hammer className="w-4 h-4"/> },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 rounded-2xl hover:bg-amber-50/50 transition-colors group">
-                         <div className="flex items-center gap-3 text-amber-900/40 group-hover:text-amber-900 transition-colors">
-                            {item.i}
-                            <span className="text-[10px] font-bold uppercase tracking-widest">{item.l}</span>
-                         </div>
-                         <span className="text-sm font-bold text-[#2d221c]">₹{item.v.toFixed(0)}</span>
-                      </div>
-                    ))}
-                 </div>
-
-                 <div className="p-8 bg-[#2d221c] rounded-[2rem] text-white border-t border-white/5 shadow-xl">
-                    <p className="text-[9px] font-black text-amber-400/50 uppercase tracking-[0.3em] mb-2 font-black">Estimated Value</p>
-                    <div className="flex items-baseline gap-2">
-                       <span className="text-sm text-amber-400/50">₹</span>
-                       <span className="text-4xl font-serif text-white tracking-tighter">{(summary.grandTotal || 0).toLocaleString(undefined, {maximumFractionDigits:0})}</span>
-                    </div>
-                    <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
-                       <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Net Margin</span>
-                       <span className="text-lg font-serif text-emerald-400">{summary.profitPercent}%</span>
-                    </div>
-                 </div>
-
-                 <p className="text-[9px] text-amber-900/30 text-center uppercase tracking-widest font-medium italic">Calculations updated in real-time based on master rates.</p>
-              </div>
-           </div>
-        </div>
       </form>
+
+      {/* Intelligence Pop-up Button */}
+      <IntelligenceHub control={control} missingRates={missingRates} customerName={watchedValues.customerName} />
     </div>
+  );
+}
+
+function IntelligenceHub({ control, missingRates, customerName }: { control: any, missingRates: string[], customerName?: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const watchedValues = useWatch({ control });
+  
+  const summary = useMemo(() => {
+    return calculateFinalQuotation(
+      (watchedValues.woodBreakdown || []).map((r: any) => calculateWoodRow(r as any)),
+      (watchedValues.plyBreakdown || []).map((r: any) => calculatePlyRow(r as any)),
+      (watchedValues.foamBreakdown || []).map((r: any) => calculateFoamRow(r as any)),
+      (watchedValues.fabricBreakdown || []).map((r: any) => calculateFabricRow(r as any)),
+      watchedValues.labour ? { 
+        carpenter: watchedValues.labour.carpenter || 0, 
+        polish: watchedValues.labour.polish || 0, 
+        foam: watchedValues.labour.foam || 0 
+      } : { carpenter: 0, polish: 0, foam: 0 },
+      watchedValues.miscellaneous ? { amount: watchedValues.miscellaneous.amount || 0 } : { amount: 0 },
+      watchedValues.factoryExpensePercent || 30,
+      watchedValues.markupPercent || 20,
+      watchedValues.gstPercent || 18
+    );
+  }, [watchedValues]);
+
+  return (
+    <>
+      <button type="button" onClick={() => setIsOpen(!isOpen)} className="fixed bottom-10 right-10 w-20 h-20 bg-[#2d221c] text-white rounded-[2rem] shadow-2xl z-[100] border-t border-white/20 flex flex-col items-center justify-center gap-1 group overflow-hidden">
+        <div className="bg-grain absolute inset-0 opacity-10 pointer-events-none"></div>
+        <Calculator className={`w-8 h-8 transition-transform duration-500 ${isOpen ? 'rotate-90 scale-75' : 'group-hover:scale-110'}`} />
+        <span className="text-[8px] font-black uppercase tracking-widest">{isOpen ? 'Close' : 'View Hub'}</span>
+        {missingRates.length > 0 && <div className="absolute top-4 right-4 w-3 h-3 bg-rose-500 rounded-full border-2 border-[#2d221c] animate-pulse" />}
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsOpen(false)}></div>
+          <div className="bg-[#2d221c] text-white w-full max-w-2xl rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] relative overflow-hidden border border-white/10 animate-in zoom-in-95 duration-500">
+            <div className="bg-grain absolute inset-0 opacity-[0.05] pointer-events-none"></div>
+            <div className="p-10 md:p-14 relative z-10 space-y-10">
+               <div className="flex items-center justify-between border-b border-white/5 pb-8">
+                  <div className="flex items-center gap-4 text-amber-500"><Activity className="w-6 h-6"/><h3 className="text-3xl font-serif text-white">Intelligence Revision</h3></div>
+                  <div className="text-right font-serif opacity-50 px-4">Audit Active</div>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center"><span className="text-white/40 uppercase tracking-widest font-black text-[10px]">Material Hub</span><span className="font-serif text-2xl font-light">₹{summary.totalMaterials.toLocaleString()}</span></div>
+                    <div className="flex justify-between items-center"><span className="text-white/40 uppercase tracking-widest font-black text-[10px]">Operational Total</span><span className="font-serif text-2xl font-light">₹{summary.totalInternalCost.toLocaleString()}</span></div>
+                    <div className="pt-6 border-t border-white/5 flex justify-between items-end"><div className="space-y-1"><p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Internal Cost</p><p className="text-4xl font-serif font-light">₹{summary.totalInternalCost.toLocaleString()}</p></div></div>
+                  </div>
+                  <div className="bg-amber-500/10 p-10 rounded-[2.5rem] border border-amber-500/20 shadow-inner flex flex-col justify-center items-center text-center">
+                    <p className="text-[11px] font-black text-amber-500 uppercase tracking-widest mb-4">Market Valuation</p>
+                    <p className="text-6xl font-serif text-white tracking-tighter">₹{summary.grandTotal.toLocaleString()}</p>
+                    <div className="mt-8 flex gap-6 text-[10px] font-black uppercase tracking-widest"><span className="text-emerald-400">Yield: {summary.profitPercent}%</span></div>
+                  </div>
+               </div>
+               <Button onClick={() => setIsOpen(false)} className="w-full h-16 bg-white text-[#2d221c] rounded-2xl font-serif text-xl hover:bg-amber-50">Back to Refinement</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

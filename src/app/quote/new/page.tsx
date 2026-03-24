@@ -123,27 +123,6 @@ export default function NewQuotePage() {
   const { fields: foamFields, append: appendFoam, remove: removeFoam } = useFieldArray({ control, name: "foamBreakdown" });
   const { fields: fabricFields, append: appendFabric, remove: removeFabric } = useFieldArray({ control, name: "fabricBreakdown" });
 
-  const watchedValues = useWatch({ control });
-  
-  // Real-time calculation engine
-  const summary = useMemo(() => {
-    return calculateFinalQuotation(
-      (watchedValues.woodBreakdown || []).map(r => calculateWoodRow(r as any)),
-      (watchedValues.plyBreakdown || []).map(r => calculatePlyRow(r as any)),
-      (watchedValues.foamBreakdown || []).map(r => calculateFoamRow(r as any)),
-      (watchedValues.fabricBreakdown || []).map(r => calculateFabricRow(r as any)),
-      watchedValues.labour ? { 
-        carpenter: watchedValues.labour.carpenter || 0, 
-        polish: watchedValues.labour.polish || 0, 
-        foam: watchedValues.labour.foam || 0 
-      } : { carpenter: 0, polish: 0, foam: 0 },
-      watchedValues.miscellaneous ? { amount: watchedValues.miscellaneous.amount || 0 } : { amount: 0 },
-      watchedValues.factoryExpensePercent || 30,
-      watchedValues.markupPercent || 20,
-      watchedValues.gstPercent || 18
-    );
-  }, [watchedValues]);
-
   // ─── MASTER DATA FETCHING ───
   useEffect(() => {
     const loadMasters = async () => {
@@ -156,30 +135,38 @@ export default function NewQuotePage() {
     loadMasters();
   }, []);
 
+  // Use watch for specific fields that need side-effects, not for the whole summary
+  const watchedWood = watch("woodBreakdown");
+  const watchedPly = watch("plyBreakdown");
+  const watchedFoam = watch("foamBreakdown");
+  const watchedProductName = watch("productName");
+  const watchedCustomerName = watch("customerName");
+  const watchedImage = watch("productImage");
+
   // ─── AUTO-RATE LOOKUP LOGIC ───
   useEffect(() => {
-    watchedValues.woodBreakdown?.forEach((row, index) => {
+    watchedWood?.forEach((row, index) => {
       if (row?.isRateOverridden) return;
       const match = findWoodMaster(row?.woodType || '', row?.length_ft || 0, row?.width_in || 0, row?.thickness_in || 0, woodMasters);
       if (match) setValue(`woodBreakdown.${index}.rate_per_gf`, match.rate_per_gf);
     });
-  }, [watchedValues.woodBreakdown, woodMasters, setValue]);
+  }, [watchedWood, woodMasters, setValue]);
 
   useEffect(() => {
-    watchedValues.plyBreakdown?.forEach((row, index) => {
+    watchedPly?.forEach((row, index) => {
       if (row?.isRateOverridden) return;
       const match = findPlyMaster(row?.plyCategory || '', row?.thickness_mm || 0, plyMasters);
       if (match) setValue(`plyBreakdown.${index}.rate_per_sqft`, match.rate_per_sqft);
     });
-  }, [watchedValues.plyBreakdown, plyMasters, setValue]);
+  }, [watchedPly, plyMasters, setValue]);
 
   useEffect(() => {
-    watchedValues.foamBreakdown?.forEach((row, index) => {
+    watchedFoam?.forEach((row, index) => {
       if (row?.isRateOverridden) return;
       const match = findFoamMaster(row?.foamType || '', row?.specification || '', foamMasters);
       if (match) setValue(`foamBreakdown.${index}.master_rate`, match.base_rate);
     });
-  }, [watchedValues.foamBreakdown, foamMasters, setValue]);
+  }, [watchedFoam, foamMasters, setValue]);
 
   // Material Data Helpers
   const woodTypes = useMemo(() => Array.from(new Set(woodMasters.map(m => m.wood_type))).sort(), [woodMasters]);
@@ -190,17 +177,17 @@ export default function NewQuotePage() {
   // Save Block Check
   const missingRates = useMemo(() => {
     const issues: string[] = [];
-    watchedValues.woodBreakdown?.forEach((r: any, i: number) => {
+    watchedWood?.forEach((r: any, i: number) => {
       if (!r.isRateOverridden && (r.rate_per_gf || 0) === 0 && r.woodType) issues.push(`Wood #${i+1}: Missing rate for ${r.woodType}`);
     });
-    watchedValues.plyBreakdown?.forEach((r: any, i: number) => {
+    watchedPly?.forEach((r: any, i: number) => {
       if (!r.isRateOverridden && (r.rate_per_sqft || 0) === 0 && r.plyCategory) issues.push(`Ply #${i+1}: Missing rate for ${r.plyCategory}`);
     });
-    watchedValues.foamBreakdown?.forEach((r: any, i: number) => {
+    watchedFoam?.forEach((r: any, i: number) => {
       if (!r.isRateOverridden && (r.master_rate || 0) === 0 && r.foamType) issues.push(`Foam #${i+1}: Missing rate for ${r.foamType}`);
     });
     return issues;
-  }, [watchedValues.woodBreakdown, watchedValues.plyBreakdown, watchedValues.foamBreakdown]);
+  }, [watchedWood, watchedPly, watchedFoam]);
 
   const onSubmit = async (data: Quotation) => {
     if (missingRates.length > 0) {
@@ -215,6 +202,15 @@ export default function NewQuotePage() {
       const foamCalc = data.foamBreakdown.map(r => calculateFoamRow(r as any));
       const fabricCalc = data.fabricBreakdown.map(r => calculateFabricRow(r as any));
       
+      const summary = calculateFinalQuotation(
+        woodCalc, plyCalc, foamCalc, fabricCalc,
+        data.labour || { carpenter: 0, polish: 0, foam: 0, total: 0 },
+        data.miscellaneous || { amount: 0, total: 0 },
+        data.factoryExpensePercent || 30,
+        data.markupPercent || 20,
+        data.gstPercent || 18
+      );
+
       const finalData = {
         ...data,
         refCode: generateRefCode(),
@@ -304,8 +300,8 @@ export default function NewQuotePage() {
                        <p className="text-[10px] font-black text-amber-900/60 uppercase tracking-[0.2em] mb-6">Visual Reference (Product Drawing)</p>
                        <div className="flex flex-col md:flex-row items-center gap-8">
                           <div className="w-48 h-48 rounded-3xl bg-amber-50 border-2 border-dashed border-amber-900/10 flex items-center justify-center overflow-hidden group shadow-inner">
-                             {watchedValues.productImage ? (
-                               <img src={watchedValues.productImage as any} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Preview" />
+                             {watchedImage ? (
+                               <img src={watchedImage as any} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Preview" />
                              ) : (
                                <Package className="w-12 h-12 text-amber-900/10" />
                              )}
@@ -326,7 +322,7 @@ export default function NewQuotePage() {
                              <label htmlFor="image-upload" className="px-8 py-4 bg-[#2d221c] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] cursor-pointer hover:bg-black shadow-lg transition-all flex items-center gap-3">
                                 <Plus className="w-4 h-4" /> Upload Technical Drawing
                              </label>
-                             {watchedValues.productImage && (
+                             {watchedImage && (
                                <button type="button" onClick={() => setValue("productImage", undefined)} className="text-[10px] text-rose-500 font-bold uppercase tracking-widest hover:underline block mx-auto md:mx-0">Remove Ref Image</button>
                              )}
                           </div>
@@ -363,7 +359,7 @@ export default function NewQuotePage() {
 
                   <div className="space-y-4">
                     {woodFields.map((field, index) => {
-                      const row = watchedValues.woodBreakdown?.[index] as any;
+                      const row = watchedWood?.[index] as any;
                       const gf = row ? calculateGunFoot(row.length_ft || 0, row.width_in || 0, row.thickness_in || 0, row.quantity || 0) : 0;
                       const hasRate = row?.isRateOverridden || (row?.rate_per_gf || 0) > 0;
                       
@@ -423,7 +419,7 @@ export default function NewQuotePage() {
 
                   <div className="space-y-4">
                     {plyFields.map((field, index) => {
-                      const row = watchedValues.plyBreakdown?.[index] as any;
+                      const row = watchedPly?.[index] as any;
                       const sqft = row ? (row.cut_length_in * row.cut_width_in * row.quantity) / 144 : 0;
                       const hasRate = row?.isRateOverridden || (row?.rate_per_sqft || 0) > 0;
 
@@ -474,7 +470,7 @@ export default function NewQuotePage() {
 
                   <div className="space-y-4">
                     {foamFields.map((field, index) => {
-                      const row = watchedValues.foamBreakdown?.[index] as any;
+                      const row = watchedFoam?.[index] as any;
                       const sqft = row ? (row.cut_length_in * row.cut_width_in * row.quantity) / 144 : 0;
                       const hasRate = row?.isRateOverridden || (row?.master_rate || 0) > 0;
                       const derivedPerSqft = ((row?.master_rate || 0) * (row?.thickness_in || 0)) / 18;
@@ -518,7 +514,7 @@ export default function NewQuotePage() {
 
                   <div className="space-y-4">
                     {fabricFields.map((field, index) => {
-                      const row = watchedValues.fabricBreakdown?.[index] as any;
+                      const row = (watch("fabricBreakdown") as any)?.[index];
                       const cost = (row?.metersRequired || 0) * (row?.ratePerMeter || 0);
 
                       return (
@@ -600,88 +596,126 @@ export default function NewQuotePage() {
           )}
         </form>
 
-        {/* STICKY LIVE SIDEBAR */}
-        <aside className="lg:col-span-4 sticky top-8 space-y-6">
-           <div className="bg-[#2d221c] text-white p-8 md:p-10 rounded-[3rem] shadow-2xl relative overflow-hidden border-t border-white/10">
-              <div className="bg-grain absolute inset-0 opacity-[0.05] pointer-events-none"></div>
-              
-              <div className="relative z-10">
-                 <div className="flex items-center gap-3 mb-10 opacity-50">
-                    <Activity className="w-4 h-4 text-amber-500" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em]">Live Intelligence Feed</span>
-                 </div>
-
-                 <div className="space-y-6 mb-12">
-                    <div className="flex justify-between items-center text-xs group">
-                       <span className="text-white/40 group-hover:text-amber-200/80 transition-colors uppercase tracking-widest font-black text-[9px]">Materials</span>
-                       <span className="font-serif text-xl font-light">₹{summary.totalMaterials.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs group">
-                       <span className="text-white/40 group-hover:text-amber-200/80 transition-colors uppercase tracking-widest font-black text-[9px]">Craftsmanship</span>
-                       <span className="font-serif text-xl font-light">₹{summary.totalLabour.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs group">
-                       <span className="text-white/40 group-hover:text-amber-200/80 transition-colors uppercase tracking-widest font-black text-[9px]">Operations</span>
-                       <span className="font-serif text-xl font-light">₹{summary.factoryExpenseAmount.toLocaleString()}</span>
-                    </div>
-                    
-                    <div className="pt-8 border-t border-white/5 flex justify-between items-end">
-                       <div className="space-y-1">
-                          <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em]">Internal Cost</p>
-                          <p className="text-3xl font-serif font-light">₹{summary.totalInternalCost.toLocaleString()}</p>
-                       </div>
-                    </div>
-                 </div>
-
-                 <div className="bg-amber-500/10 p-8 rounded-[2rem] border border-amber-500/20 mb-8 shadow-inner relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] mb-3">Est. Selling Price</p>
-                    <p className="text-5xl font-serif text-white tracking-tight font-light">₹{summary.grandTotal.toLocaleString()}</p>
-                    <div className="flex justify-between items-center mt-6 pt-5 border-t border-white/5 text-[10px] font-black text-emerald-400 uppercase tracking-widest">
-                       <span className="flex items-center gap-2"><Percent className="w-3 h-3" /> GST: ₹{summary.gstAmount.toLocaleString()}</span>
-                       <span className="bg-emerald-500/10 px-2 py-1 rounded text-[9px]">Margin: {summary.profitPercent}%</span>
-                    </div>
-                 </div>
-
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/5 p-5 rounded-2xl border border-white/5 group hover:bg-white/10 transition-colors">
-                       <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2">Net Profit</p>
-                       <p className="text-base font-black text-emerald-400">₹{summary.grossProfitAmount.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-white/5 p-5 rounded-2xl border border-white/5 group hover:bg-white/10 transition-colors">
-                       <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2">Efficiency</p>
-                       <p className="text-base font-black text-amber-400">Auto-Optimized</p>
-                    </div>
-                 </div>
-              </div>
-           </div>
-
-           <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-amber-900/5">
-              <h4 className="text-[10px] font-black uppercase text-amber-900/40 tracking-[0.3em] mb-6 flex items-center justify-between">
-                 Validation Diagnostics
-                 {missingRates.length > 0 ? <AlertTriangle className="w-4 h-4 text-rose-500" /> : <ClipboardCheck className="w-4 h-4 text-emerald-500" />}
-              </h4>
-              <div className="space-y-4">
-                 {missingRates.length === 0 ? (
-                    <div className="flex items-center gap-3 text-emerald-700">
-                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                       <span className="text-[11px] font-bold uppercase tracking-tight">AI Audit: Data Integrity Verified</span>
-                    </div>
-                 ) : (
-                    <div className="flex items-start gap-3 text-rose-600">
-                       <div className="w-2 h-2 rounded-full bg-rose-500 mt-1"></div>
-                       <p className="text-[11px] font-bold uppercase leading-tight tracking-tight">
-                          Valuation Blocked: {missingRates.length} Errors detected in Master Rates.
-                       </p>
-                    </div>
-                 )}
-                 <div className="flex items-center gap-3 text-amber-900/40 text-[10px] font-bold uppercase pt-4 border-t border-amber-900/5">
-                    <Activity className="w-3.5 h-3.5" /> Identity: {watchedValues.customerName || 'Waiting...'}
-                 </div>
-              </div>
-           </div>
-        </aside>
+        {/* FLOATING INTELLIGENCE HUB */}
+        <IntelligenceHub control={control} missingRates={missingRates} customerName={watchedCustomerName} />
       </div>
     </div>
   );
+}
+
+/**
+ * INTELLIGENCE HUB COMPONENT
+ * Extracted to prevent re-rendering the whole form on every keystroke.
+ * Includes the "Pop-up" behavior requested.
+ */
+function IntelligenceHub({ control, missingRates, customerName }: { control: any, missingRates: string[], customerName?: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const watchedValues = useWatch({ control });
+  
+  const summary = useMemo(() => {
+    return calculateFinalQuotation(
+      (watchedValues.woodBreakdown || []).map(r => calculateWoodRow(r as any)),
+      (watchedValues.plyBreakdown || []).map(r => calculatePlyRow(r as any)),
+      (watchedValues.foamBreakdown || []).map(r => calculateFoamRow(r as any)),
+      (watchedValues.fabricBreakdown || []).map(r => calculateFabricRow(r as any)),
+      watchedValues.labour ? { 
+        carpenter: watchedValues.labour.carpenter || 0, 
+        polish: watchedValues.labour.polish || 0, 
+        foam: watchedValues.labour.foam || 0 
+      } : { carpenter: 0, polish: 0, foam: 0 },
+      watchedValues.miscellaneous ? { amount: watchedValues.miscellaneous.amount || 0 } : { amount: 0 },
+      watchedValues.factoryExpensePercent || 30,
+      watchedValues.markupPercent || 20,
+      watchedValues.gstPercent || 18
+    );
+  }, [watchedValues]);
+
+  return (
+    <>
+      {/* Floating Toggle Button */}
+      <button 
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed bottom-10 right-10 w-20 h-20 bg-[#2d221c] text-white rounded-[2rem] shadow-2xl z-[100] border-t border-white/20 flex flex-col items-center justify-center gap-1 group overflow-hidden"
+      >
+        <div className="bg-grain absolute inset-0 opacity-10 pointer-events-none"></div>
+        <Calculator className={`w-8 h-8 transition-transform duration-500 ${isOpen ? 'rotate-90 scale-75' : 'group-hover:scale-110'}`} />
+        <span className="text-[8px] font-black uppercase tracking-widest">{isOpen ? 'Close' : 'View Hub'}</span>
+        {missingRates.length > 0 && <div className="absolute top-4 right-4 w-3 h-3 bg-rose-500 rounded-full border-2 border-[#2d221c] animate-pulse" />}
+      </button>
+
+      {/* Intelligence Pop-up Overlay */}
+      {isOpen && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsOpen(false)}></div>
+          
+          <div className="bg-[#2d221c] text-white w-full max-w-2xl rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] relative overflow-hidden border border-white/10 animate-in zoom-in-95 duration-500">
+            <div className="bg-grain absolute inset-0 opacity-[0.05] pointer-events-none"></div>
+            
+            <div className="p-10 md:p-14 relative z-10 space-y-10">
+               <div className="flex items-center justify-between border-b border-white/5 pb-8">
+                  <div className="flex items-center gap-4">
+                     <Activity className="w-6 h-6 text-amber-500" />
+                     <h3 className="text-3xl font-serif">Intelligence Hub</h3>
+                  </div>
+                  <div className="text-right">
+                     <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Client Audit</p>
+                     <p className="text-sm font-light text-white/50">{customerName || 'Pending Identification'}</p>
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center group">
+                       <span className="text-white/40 uppercase tracking-widest font-black text-[10px]">Material Cost</span>
+                       <span className="font-serif text-2xl font-light">₹{summary.totalMaterials.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center group">
+                       <span className="text-white/40 uppercase tracking-widest font-black text-[10px]">Craftsmanship</span>
+                       <span className="font-serif text-2xl font-light">₹{summary.totalLabour.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center group">
+                       <span className="text-white/40 uppercase tracking-widest font-black text-[10px]">Operations</span>
+                       <span className="font-serif text-2xl font-light">₹{summary.factoryExpenseAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="pt-6 border-t border-white/5 flex justify-between items-end">
+                       <div className="space-y-1">
+                          <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Total Internal</p>
+                          <p className="text-4xl font-serif font-light">₹{summary.totalInternalCost.toLocaleString()}</p>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-500/10 p-10 rounded-[2.5rem] border border-amber-500/20 shadow-inner flex flex-col justify-center items-center text-center">
+                    <p className="text-[11px] font-black text-amber-500 uppercase tracking-widest mb-4">Market Valuation</p>
+                    <p className="text-6xl font-serif text-white tracking-tighter">₹{summary.grandTotal.toLocaleString()}</p>
+                    <div className="mt-8 flex gap-6 text-[10px] font-black uppercase tracking-widest">
+                       <span className="text-emerald-400">Margin: {summary.profitPercent}%</span>
+                       <span className="text-white/30">Tax: {watchedValues.gstPercent || 18}%</span>
+                    </div>
+                  </div>
+               </div>
+
+               <div className="bg-white/5 p-8 rounded-[2rem] border border-white/5">
+                  <div className="flex items-center justify-between mb-4">
+                     <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2">
+                        System Diagnostics {missingRates.length > 0 ? <AlertTriangle className="w-4 h-4 text-rose-500" /> : <ClipboardCheck className="w-4 h-4 text-emerald-500" />}
+                     </h4>
+                  </div>
+                  {missingRates.length === 0 ? (
+                     <p className="text-xs text-emerald-400 font-serif italic">"Audit complete. Data integrity verified for high-end production."</p>
+                  ) : (
+                     <p className="text-xs text-rose-400 font-serif italic">"Action Required: {missingRates.length} rate mismatches detected."</p>
+                  )}
+               </div>
+
+                <Button onClick={() => setIsOpen(false)} className="w-full h-16 bg-white text-[#2d221c] rounded-2xl font-serif text-xl hover:bg-amber-50 transition-colors">
+                  Return to Workshop
+               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+   );
 }
