@@ -29,7 +29,7 @@ import {
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Quotation } from "@/types";
-import { getRecentQuotations, duplicateQuotation } from "@/lib/firebase/services";
+import { getRecentQuotations, duplicateQuotation, deleteQuotation, deleteAllQuotations } from "@/lib/firebase/services";
 
 export default function QuotesLibraryPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -65,6 +65,32 @@ export default function QuotesLibraryPage() {
     }
   };
 
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm("Permanently delete this quotation? This cannot be undone.")) {
+      try {
+        await deleteQuotation(id);
+        loadQuotes();
+      } catch (err) {
+        alert("Deletion failed.");
+      }
+    }
+  };
+
+  const handleWipeLibrary = async () => {
+    if (confirm("CRITICAL ACTION: This will permanently delete EVERY quotation in your library. Type 'CONFIRM' to proceed.")) {
+      const confirmation = prompt("Type 'CONFIRM' to proceed:");
+      if (confirmation === 'CONFIRM') {
+        try {
+          await deleteAllQuotations();
+          loadQuotes();
+        } catch (err) {
+          alert("Wipe failed.");
+        }
+      }
+    }
+  };
+
   const filteredQuotes = quotes.filter(q => 
     (q.productName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     q.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -87,12 +113,21 @@ export default function QuotesLibraryPage() {
              <Database className="w-4 h-4" /> MANAGING {quotes.length} STORED PRODUCT DRAWINGS & COST AUDITS
           </p>
         </div>
-        <Link href="/quote/new">
-          <Button className="h-14 px-8 rounded-2xl bg-[#2d221c] hover:bg-black text-white shadow-2xl shadow-amber-900/10 border-t border-white/5 flex items-center gap-3 group transition-all text-sm font-serif">
-            <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
-            New Quotation
+        <div className="flex gap-4">
+          <Button 
+            onClick={handleWipeLibrary}
+            className="h-14 px-8 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 shadow-sm border border-rose-200 flex items-center gap-3 transition-all text-sm font-serif group"
+          >
+            <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            Wipe Library
           </Button>
-        </Link>
+          <Link href="/quote/new">
+            <Button className="h-14 px-8 rounded-2xl bg-[#2d221c] hover:bg-black text-white shadow-2xl shadow-amber-900/10 border-t border-white/5 flex items-center gap-3 group transition-all text-sm font-serif">
+              <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
+              New Quotation
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Control Bar */}
@@ -205,14 +240,21 @@ export default function QuotesLibraryPage() {
                     <div className="flex gap-2">
                        <button 
                          onClick={(e) => handleDuplicate(e, quote.id!)}
-                         className="p-2.5 rounded-xl text-amber-900/20 hover:text-amber-700 hover:bg-amber-50 transition-all"
+                         className="p-2.5 rounded-xl text-amber-900/40 hover:text-amber-700 hover:bg-amber-50 transition-all"
                          title="Duplicate Unit"
                        >
                           <Copy className="w-4 h-4" />
                        </button>
                        <button 
+                         onClick={(e) => handleDelete(e, quote.id!)}
+                         className="p-2.5 rounded-xl text-rose-300 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                         title="Delete Unit"
+                       >
+                          <Trash2 className="w-4 h-4" />
+                       </button>
+                       <button 
                          onClick={(e) => { e.stopPropagation(); window.open(`/quote/view/${quote.id}?download=true`, '_blank'); }}
-                         className="p-2.5 rounded-xl text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition-all" 
+                         className="p-2.5 rounded-xl text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-all" 
                          title="Export PDF"
                        >
                           <Printer className="w-4 h-4" />
@@ -254,11 +296,12 @@ export default function QuotesLibraryPage() {
                          (quote.summary?.profitPercent || 0) < 22 ? 'text-rose-500' : 'text-emerald-600'
                       }`}>{quote.summary?.profitPercent || 0}% YIELD</p>
                    </div>
-                   <div className="flex gap-2">
-                      <button onClick={(e) => handleDuplicate(e, quote.id!)} className="p-3 rounded-xl text-amber-900/20 hover:text-amber-700 hover:bg-white transition-all"><Copy className="w-5 h-5"/></button>
-                      <button onClick={(e) => { e.stopPropagation(); window.open(`/quote/view/${quote.id}?download=true`, '_blank'); }} className="p-3 rounded-xl text-amber-600 hover:text-amber-700 hover:bg-white transition-all"><Printer className="w-5 h-5"/></button>
-                      <ChevronRight className="w-8 h-8 text-amber-900/10 group-hover:text-amber-600 group-hover:translate-x-2 transition-all duration-500" />
-                   </div>
+                    <div className="flex gap-2">
+                       <button onClick={(e) => handleDuplicate(e, quote.id!)} className="p-3 rounded-xl text-amber-900/20 hover:text-amber-700 hover:bg-white transition-all"><Copy className="w-5 h-5"/></button>
+                       <button onClick={(e) => handleDelete(e, quote.id!)} className="p-3 rounded-xl text-rose-300 hover:text-rose-600 hover:bg-rose-50 transition-all"><Trash2 className="w-5 h-5"/></button>
+                       <button onClick={(e) => { e.stopPropagation(); window.open(`/quote/view/${quote.id}?download=true`, '_blank'); }} className="p-3 rounded-xl text-amber-600 hover:text-amber-700 hover:bg-white transition-all"><Printer className="w-5 h-5"/></button>
+                       <ChevronRight className="w-8 h-8 text-amber-900/10 group-hover:text-amber-600 group-hover:translate-x-2 transition-all duration-500" />
+                    </div>
                 </div>
               </div>
             )

@@ -74,6 +74,21 @@ export const duplicateQuotation = async (id: string) => {
   });
 };
 
+export const deleteQuotation = async (id: string) => {
+  const docRef = doc(db, "quotations", id);
+  await deleteDoc(docRef);
+};
+
+export const deleteAllQuotations = async () => {
+  const q = query(collection(db, "quotations"));
+  const snapshot = await getDocs(q);
+  const batch = writeBatch(db);
+  snapshot.docs.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+  await batch.commit();
+};
+
 // --- MASTERS CRUD ---
 
 // ── COLLECTION PATHS ──
