@@ -28,6 +28,8 @@ const STEPS = [
   { id: 4, title: "Audit", subtitle: "Labour & Yield" }
 ];
 
+export const dynamic = 'force-dynamic';
+
 export default function EditQuotePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = React.use(params);
   const id = resolvedParams.id;

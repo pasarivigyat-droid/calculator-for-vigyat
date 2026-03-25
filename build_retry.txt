@@ -1,0 +1,49 @@
+﻿Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 23.9s
+  Running TypeScript ...
+
+  We detected TypeScript in your project and reconfigured your tsconfig.json file for you.
+  The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
+
+  	- target was set to ES2017 (For top-level `await`. Note: Next.js only polyfills for the esmodules target.)
+  	- include was updated to add '.next/dev/types/**/*.ts'
+
+  The following mandatory changes were made to your tsconfig.json:
+
+  	- jsx was set to react-jsx (next.js uses the React automatic runtime)
+
+  Finished TypeScript in 13.7s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/10) ...
+  Generating static pages using 3 workers (2/10) 
+  Generating static pages using 3 workers (4/10) 
+  Generating static pages using 3 workers (7/10) 
+Γ£ô Generating static pages using 3 workers (10/10) in 837ms
+  Finalizing page optimization ...
+
+
+Redirects
+Γöî source: /:path+/
+Γö£ destination: /:path+
+Γöö permanent: true
+
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /admin-setup
+Γö£ Γùï /login
+Γö£ Γùï /masters
+Γö£ ╞Æ /quote/edit/[id]
+Γö£ Γùï /quote/new
+Γö£ ╞Æ /quote/view/[id]
+Γö£ Γùï /quotes
+Γöö Γùï /references
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

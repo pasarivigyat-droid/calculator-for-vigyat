@@ -16,6 +16,8 @@ import {
   saveWoodMaster, savePlyMaster, saveFoamMaster, saveFabricMaster,
   getMarkupSettings, saveMarkupSetting, bulkImportMasters
 } from "@/lib/firebase/services";
+
+export const dynamic = 'force-dynamic';
 import { 
   parseCSV, generateCSV, downloadCSV, validateMasterRow, getDuplicateKey, 
   ValidationError, EXPORT_HEADERS, INTERNAL_EXPORT_HEADERS, normalizePlyCategory,

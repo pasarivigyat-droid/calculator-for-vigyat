@@ -1,0 +1,30 @@
+﻿ΓÜá `eslint` configuration in next.config.mjs is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+ΓÜá Invalid next.config.mjs options detected: 
+ΓÜá     Unrecognized key(s) in object: 'eslint'
+ΓÜá See more info here: https://nextjs.org/docs/messages/invalid-next-config
+Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+System.Management.Automation.RemoteException
+> Build error occurred
+Error: Turbopack build failed with 1 errors:
+./src/app/globals.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at at (C:\Users\vigya\Downloads\furniture-costing-quoting-tool\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\vigya\Downloads\furniture-costing-quoting-tool\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\vigya\Downloads\furniture-costing-quoting-tool\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\vigya\Downloads\furniture-costing-quoting-tool\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:103:5)]
+System.Management.Automation.RemoteException
+Import trace:
+  Client Component Browser:
+    ./src/app/globals.css [Client Component Browser]
+    ./src/app/layout.tsx [Server Component]
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\vigya\Downloads\furniture-costing-quoting-tool\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20])
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\vigya\Downloads\furniture-costing-quoting-tool\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35])
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\vigya\Downloads\furniture-costing-quoting-tool\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26])

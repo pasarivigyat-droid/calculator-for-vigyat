@@ -31,6 +31,8 @@ import { Button } from "@/components/ui/Button";
 import { Quotation } from "@/types";
 import { getRecentQuotations, duplicateQuotation, deleteQuotation, deleteAllQuotations } from "@/lib/firebase/services";
 
+export const dynamic = 'force-dynamic';
+
 export default function QuotesLibraryPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [quotes, setQuotes] = useState<Quotation[]>([]);

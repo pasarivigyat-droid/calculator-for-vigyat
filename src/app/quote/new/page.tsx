@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+
+export const dynamic = 'force-dynamic';
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Quotation, WoodMaster, PlyMaster, FoamMaster, WoodRow, PlyRow, FoamRow, CustomerType, FabricRow, FabricMaster } from "@/types";

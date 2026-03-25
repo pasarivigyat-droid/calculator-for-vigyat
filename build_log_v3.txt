@@ -1,0 +1,110 @@
+﻿node.exe : ΓÜá `eslint` 
+configuration in 
+next.config.mjs is no longer 
+supported. See more info 
+here: https://nextjs.org/docs/
+app/api-reference/cli/next#nex
+t-lint-options
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo          : 
+    NotSpecified: (ΓÜá `esli  
+  nt` co...xt-lint-options:   
+ String) [], RemoteExcepti    
+on
+    + FullyQualifiedErrorId : 
+    NativeCommandError
+ 
+ΓÜá Invalid next.config.mjs 
+options detected: 
+ΓÜá     Unrecognized key(s) 
+in object: 'eslint'
+ΓÜá See more info here: https:
+//nextjs.org/docs/messages/inv
+alid-next-config
+Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed 
+with 1 errors:
+./src/app/globals.css
+Error evaluating Node.js code
+Error: It looks like you're 
+trying to use `tailwindcss` 
+directly as a PostCSS plugin. 
+The PostCSS plugin has moved 
+to a separate package, so to 
+continue using Tailwind CSS 
+with PostCSS you'll need to 
+install 
+`@tailwindcss/postcss` and 
+update your PostCSS 
+configuration.
+    [at at (C:\Users\vigya\Dow
+nloads\furniture-costing-quoti
+ng-tool\node_modules\tailwindc
+ss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopac
+k:///[turbopack-node]/transfor
+ms/postcss.ts:56:14) [C:\Users
+\vigya\Downloads\furniture-cos
+ting-quoting-tool\.next\build\
+chunks\[root-of-the-server]__0
+iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turb
+opack-node]/transforms/postcss
+.ts:43:33) [C:\Users\vigya\Dow
+nloads\furniture-costing-quoti
+ng-tool\.next\build\chunks\[ro
+ot-of-the-server]__0iv9ksq._.j
+s:155:35]
+    at init (turbopack:///[tur
+bopack-node]/child_process/eva
+luate.ts:74:20) [C:\Users\vigy
+a\Downloads\furniture-costing-
+quoting-tool\.next\build\chunk
+s\[root-of-the-server]__0rua-~
+2._.js:429:26]
+    [at process.processTicksAn
+dRejections (node:internal/pro
+cess/task_queues:103:5)]
+
+Import trace:
+  Client Component Browser:
+    ./src/app/globals.css 
+[Client Component Browser]
+    ./src/app/layout.tsx 
+[Server Component]
+
+
+    at pluginFactory (turbopac
+k:///[turbopack-node]/transfor
+ms/postcss.ts:56:14) [C:\Users
+\vigya\Downloads\furniture-cos
+ting-quoting-tool\.next\build\
+chunks\[root-of-the-server]__0
+iv9ksq._.js:165:20])
+    at map (turbopack:///[turb
+opack-node]/transforms/postcss
+.ts:43:33) [C:\Users\vigya\Dow
+nloads\furniture-costing-quoti
+ng-tool\.next\build\chunks\[ro
+ot-of-the-server]__0iv9ksq._.j
+s:155:35])
+    at init (turbopack:///[tur
+bopack-node]/child_process/eva
+luate.ts:74:20) [C:\Users\vigy
+a\Downloads\furniture-costing-
+quoting-tool\.next\build\chunk
+s\[root-of-the-server]__0rua-~
+2._.js:429:26])
