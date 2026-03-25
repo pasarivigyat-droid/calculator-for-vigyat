@@ -190,8 +190,8 @@ export default function DashboardPage() {
              <h2 className="text-2xl font-serif text-[#2d221c] pl-4">Digital Assets</h2>
              <div className="grid grid-cols-1 gap-5">
                 {[
-                  { title: 'Material Library', sub: 'Master Pricing Index', icon: <LayoutGrid/>, link: '/masters', theme: 'dark' },
-                  { title: 'Valuation Archive', sub: 'Historical Audit Logs', icon: <Clock/>, link: '/quotes', theme: 'light' }
+                  { title: 'Material Library', sub: 'Master Pricing Index', icon: LayoutGrid, link: '/masters', theme: 'dark' },
+                  { title: 'Valuation Archive', sub: 'Historical Audit Logs', icon: Clock, link: '/quotes', theme: 'light' }
                 ].map((item, i) => (
                   <Link key={i} href={item.link}>
                      <div className={`p-8 rounded-[2.5rem] transition-all group relative overflow-hidden shadow-2xl ${
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                         <div className="relative z-10">
                            <div className="flex items-center justify-between mb-8">
                              <div className={`p-3 rounded-2xl ${item.theme === 'dark' ? 'bg-white/5' : 'bg-amber-50'} transition-colors`}>
-                                {React.cloneElement(item.icon as React.ReactElement, { className: "w-6 h-6 text-amber-500" })}
+                                <item.icon className="w-6 h-6 text-amber-500" />
                              </div>
                              <ChevronRight className="w-5 h-5 opacity-20 group-hover:translate-x-2 transition-all duration-500" />
                            </div>

@@ -614,10 +614,10 @@ function IntelligenceHub({ control, missingRates, customerName }: { control: any
   
   const summary = useMemo(() => {
     return calculateFinalQuotation(
-      (watchedValues.woodBreakdown || []).map(r => calculateWoodRow(r as any)),
-      (watchedValues.plyBreakdown || []).map(r => calculatePlyRow(r as any)),
-      (watchedValues.foamBreakdown || []).map(r => calculateFoamRow(r as any)),
-      (watchedValues.fabricBreakdown || []).map(r => calculateFabricRow(r as any)),
+      (watchedValues.woodBreakdown || []).map((r: any) => calculateWoodRow(r as any)),
+      (watchedValues.plyBreakdown || []).map((r: any) => calculatePlyRow(r as any)),
+      (watchedValues.foamBreakdown || []).map((r: any) => calculateFoamRow(r as any)),
+      (watchedValues.fabricBreakdown || []).map((r: any) => calculateFabricRow(r as any)),
       watchedValues.labour ? { 
         carpenter: watchedValues.labour.carpenter || 0, 
         polish: watchedValues.labour.polish || 0, 

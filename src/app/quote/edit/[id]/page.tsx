@@ -6,7 +6,7 @@ import {
   Plus, Trash2, Calculator, Save, ArrowRight, ArrowLeft,
   AlertCircle, ChevronDown, ChevronUp, AlertTriangle, Beaker,
   Copy, CheckCircle2, Printer, ExternalLink, Package, Trees, Layers, Wind,
-  User, Calendar, Tag, Image as ImageIcon, Sparkles, Hammer
+  User, Calendar, Tag, Image as ImageIcon, Sparkles, Hammer, Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -28,7 +28,9 @@ const STEPS = [
   { id: 4, title: "Audit", subtitle: "Labour & Yield" }
 ];
 
-export default function EditQuotePage({ params }: { params: { id: string } }) {
+export default function EditQuotePage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = React.use(params);
+  const id = resolvedParams.id;
   const [step, setStep] = useState(1);
   const [woodMasters, setWoodMasters] = useState<WoodMaster[]>([]);
   const [plyMasters, setPlyMasters] = useState<PlyMaster[]>([]);
@@ -68,7 +70,7 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const init = async () => {
       const [w, p, f, fab, quoteData] = await Promise.all([
-        getWoodMasters(), getPlyMasters(), getFoamMasters(), getFabricMasters(), getQuotation(params.id)
+        getWoodMasters(), getPlyMasters(), getFoamMasters(), getFabricMasters(), getQuotation(id)
       ]);
       setWoodMasters(w);
       setPlyMasters(p);
@@ -78,7 +80,7 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
       if (quoteData) reset(quoteData);
     };
     init();
-  }, [params.id, reset]);
+  }, [id, reset]);
 
   const woodTypes = useMemo(() => Array.from(new Set(woodMasters.map(m => m.wood_type))).sort(), [woodMasters]);
   const plyCategories = useMemo(() => Array.from(new Set(plyMasters.map(m => m.ply_category))).sort(), [plyMasters]);
@@ -151,8 +153,8 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
         updatedAt: new Date()
       };
 
-      await updateQuotation(params.id, finalData as any);
-      router.push(`/quote/view/${params.id}`);
+      await updateQuotation(id, finalData as any);
+      router.push(`/quote/view/${id}`);
     } catch (err: any) {
       alert("Error updating quotation: " + err.message);
     }
@@ -446,7 +448,7 @@ export default function EditQuotePage({ params }: { params: { id: string } }) {
                       <Button type="submit" isLoading={isSubmitting} className="flex-1 h-16 bg-white text-[#2d221c] font-serif text-2xl hover:bg-amber-50 rounded-2xl shadow-xl">
                          Update Quotation Record
                       </Button>
-                      <Button type="button" variant="outline" className="h-16 border-white/10 text-white hover:bg-white/5 px-8 flex items-center gap-3 font-serif text-lg" onClick={() => window.open(`/quote/view/${params.id}?download=true`, '_blank')}>
+                      <Button type="button" variant="outline" className="h-16 border-white/10 text-white hover:bg-white/5 px-8 flex items-center gap-3 font-serif text-lg" onClick={() => window.open(`/quote/view/${id}?download=true`, '_blank')}>
                          <Printer className="w-5 h-5" /> Generate PDF
                       </Button>
                    </div>
