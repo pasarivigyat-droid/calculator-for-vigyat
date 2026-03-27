@@ -1,17 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Outfit:wght@100..900&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+
+@theme {
+  --color-wood-walnut: #1c1917;
+  --color-wood-amber: #d97706;
+  --color-wood-oak: #b45309;
+  --color-wood-canvas: #f8fafa;
+  --color-wood-paper: #ffffff;
+  --color-foreground-main: #0c0a09;
+  --color-foreground-muted: #44403c;
+  
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-outfit: "Outfit", sans-serif;
+}
 
 :root {
-  --wood-walnut: #2d221c;
-  --wood-amber: #b45309;
-  --wood-oak: #d97706;
-  --wood-canvas: #fdfcf7;
+  --wood-walnut: #1c1917;
+  --wood-amber: #d97706;
+  --wood-oak: #b45309;
+  --wood-canvas: #f8fafa;
   --wood-paper: #ffffff;
-  --foreground-main: #1c1917;
-  --foreground-muted: #57534e;
+  --foreground-main: #0c0a09;
+  --foreground-muted: #44403c;
 }
 
 html,
@@ -28,19 +38,25 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, .font-serif {
-  font-family: 'Instrument Serif', serif;
+h1, h2, h3 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
 .font-outfit {
   font-family: 'Outfit', sans-serif;
 }
 
+/* Instant-Feel Utilities */
+.transition-fast {
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Wood Grain Texture Utility */
 .bg-grain {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  opacity: 0.03;
+  display: none; /* Removing decorative grain for better performance */
 }
 
 @layer utilities {
@@ -53,12 +69,11 @@ h1, h2, h3, .font-serif {
   }
   
   .glass-wood {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(146, 64, 14, 0.1);
+    background: rgba(255, 255, 255, 1); /* Solid for better performance and contrast */
+    border: 1px solid rgba(0, 0, 0, 0.08);
   }
   
   .shadow-wood {
-    box-shadow: 0 10px 30px -5px rgba(45, 34, 28, 0.05), 0 4px 10px -2px rgba(45, 34, 28, 0.03);
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); /* Minimal shadow for speed */
   }
 }

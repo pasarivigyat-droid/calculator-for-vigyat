@@ -11,34 +11,27 @@ import {
   Calculator, 
   AlertTriangle,
   AlertCircle,
-  Package,
   Trees,
   Layers,
   Wind,
   User,
-  Activity,
-  ChevronRight,
   ClipboardCheck,
-  Percent
+  Percent,
+  ChevronUp,
+  Image as ImageIcon,
+  Calendar,
+  X,
+  Camera,
+  Activity
 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-
-export const dynamic = 'force-dynamic';
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Quotation, WoodMaster, PlyMaster, FoamMaster, WoodRow, PlyRow, FoamRow, CustomerType, FabricRow, FabricMaster } from "@/types";
 import { getWoodMasters, getPlyMasters, getFoamMasters, createQuotation } from "@/lib/firebase/services";
 import { useRouter } from "next/navigation";
 import { generateRefCode } from "@/lib/utils/formatters";
 import { compressImage } from "@/lib/utils/image_compression";
-
-const CUSTOMER_TYPES: CustomerType[] = [
-  "Architect", "Interior Designer", "House Owner", "Showroom", "Third-party Supplier",
-  "Furniture Manufacturer", "Real Estate Developer", "Hospitality Group", "Retail Client", "Other"
-];
-
-// Calculation Helpers
 import { 
   calculateGunFoot, 
   calculateWoodRow, 
@@ -48,676 +41,399 @@ import {
   calculateFinalQuotation,
   findWoodMaster,
   findPlyMaster,
-  getWoodMatchReason,
-  getPlyMatchReason,
   findFoamMaster,
-  getFoamMatchReason
+  getWoodMatchReason
 } from "@/lib/utils/calculations";
 
-/**
- * DEBUG VIEW COMPONENT
- * Shows raw matched values and formulas.
- */
-function DebugView({ label, data, warnings }: { label: string, data: any, warnings?: string[] }) {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="mt-2">
-      <button 
-        type="button" 
-        onClick={() => setShow(!show)} 
-        className="text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-amber-600 flex items-center gap-1"
-      >
-        {show ? "Hide Diagnostics" : "Show Diagnostics"} {warnings && warnings.length > 0 && <span className="text-red-500">({warnings.length} issues)</span>}
-      </button>
-      {show && (
-        <div className="mt-2 p-3 bg-slate-900 rounded-lg font-mono text-[10px] text-amber-200 overflow-x-auto border-l-4 border-amber-500">
-          <p className="text-white font-bold mb-2 uppercase tracking-widest opacity-50 border-b border-white/10 pb-1">{label}</p>
-          {warnings && warnings.map((w,i) => <p key={i} className="text-red-400 mb-1">⚠ {w}</p>)}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-            {Object.entries(data).map(([k,v]) => (
-              <React.Fragment key={k}>
-                <span className="text-white/40">{k}:</span>
-                <span className="text-right">{typeof v === 'number' ? v.toLocaleString() : String(v)}</span>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+export const dynamic = 'force-dynamic';
 
-function MissingRateBadge() {
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[9px] font-bold uppercase animate-pulse">
-      <AlertTriangle className="w-3 h-3" /> No master rate
-    </span>
-  );
-}
+const PRODUCT_CATEGORIES = [
+  "Chair", "Sofa", "Bed Frame", "Jhula", "Planter Stand", "Lounge Chair", "Dining Table", "Centre Table", "Side Table"
+];
+
+const CLIENT_TYPES: CustomerType[] = [
+  'Architect', 'Interior Designer', 'House Owner', 'Distributor', 'Third-party Seller', 'Furniture Showroom', 'Other'
+];
+
+const STEPS = [
+  { id: 1, title: "Identity", subtitle: "Project Base" },
+  { id: 2, title: "Structure", subtitle: "Wood & Boards" },
+  { id: 3, title: "Comfort", subtitle: "Foam & Fabric" },
+  { id: 4, title: "Finalize", subtitle: "Labour & Margin" }
+];
 
 export default function NewQuotePage() {
   const [step, setStep] = useState(1);
+  const [preview, setPreview] = useState<string | null>(null);
   const [woodMasters, setWoodMasters] = useState<WoodMaster[]>([]);
   const [plyMasters, setPlyMasters] = useState<PlyMaster[]>([]);
   const [foamMasters, setFoamMasters] = useState<FoamMaster[]>([]);
-  const [mastersLoaded, setMastersLoaded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm<Quotation>({
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
+      productCategory: PRODUCT_CATEGORIES[0],
+      customerType: CLIENT_TYPES[0],
+      productName: '', 
       woodBreakdown: [],
       plyBreakdown: [],
       foamBreakdown: [],
       fabricBreakdown: [],
+      status: 'Draft',
+      gstPercent: 18,
+      includeGST: true,
       factoryExpensePercent: 30,
       markupPercent: 20,
-      gstPercent: 18,
       labour: { carpenter: 0, polish: 0, foam: 0, total: 0 },
-      miscellaneous: { amount: 0, total: 0 }
+      miscellaneous: { amount: 0, total: 0 },
+      isArchived: false
     }
   });
 
-  // Material field arrays
   const { fields: woodFields, append: appendWood, remove: removeWood } = useFieldArray({ control, name: "woodBreakdown" });
   const { fields: plyFields, append: appendPly, remove: removePly } = useFieldArray({ control, name: "plyBreakdown" });
   const { fields: foamFields, append: appendFoam, remove: removeFoam } = useFieldArray({ control, name: "foamBreakdown" });
   const { fields: fabricFields, append: appendFabric, remove: removeFabric } = useFieldArray({ control, name: "fabricBreakdown" });
 
-  // ─── MASTER DATA FETCHING ───
+  const watchedWood = useWatch({ control, name: "woodBreakdown" });
+  const watchedPly = useWatch({ control, name: "plyBreakdown" });
+  const watchedFoam = useWatch({ control, name: "foamBreakdown" });
+  const watchedCategory = watch("productCategory");
+
+  useEffect(() => {
+    if (watchedCategory) setValue("productName", watchedCategory);
+  }, [watchedCategory, setValue]);
+
   useEffect(() => {
     const loadMasters = async () => {
       const [w, p, f] = await Promise.all([getWoodMasters(), getPlyMasters(), getFoamMasters()]);
-      setWoodMasters(w);
-      setPlyMasters(p);
-      setFoamMasters(f);
-      setMastersLoaded(true);
+      setWoodMasters(w); setPlyMasters(p); setFoamMasters(f);
     };
     loadMasters();
   }, []);
 
-  // Use watch for specific fields that need side-effects, not for the whole summary
-  const watchedWood = watch("woodBreakdown");
-  const watchedPly = watch("plyBreakdown");
-  const watchedFoam = watch("foamBreakdown");
-  const watchedProductName = watch("productName");
-  const watchedCustomerName = watch("customerName");
-  const watchedImage = watch("productImage");
-
-  // ─── AUTO-RATE LOOKUP LOGIC ───
+  // AUTO-RATE LOGIC (Aggressive Sync)
   useEffect(() => {
-    watchedWood?.forEach((row, index) => {
+    (watchedWood || []).forEach((row: any, index: number) => {
       if (row?.isRateOverridden) return;
-      const match = findWoodMaster(row?.woodType || '', row?.length_ft || 0, row?.width_in || 0, row?.thickness_in || 0, woodMasters);
-      if (match) setValue(`woodBreakdown.${index}.rate_per_gf`, match.rate_per_gf);
+      const match = findWoodMaster(row.woodType, row.length_ft || 0, row.width_in || 0, row.thickness_in || 0, woodMasters);
+      if (match) {
+        if (row.rate_per_gf !== match.rate_per_gf) {
+          setValue(`woodBreakdown.${index}.rate_per_gf`, match.rate_per_gf);
+        }
+      } else if (row.rate_per_gf !== 0) {
+        // If dimensions changed and no match found, reset rate to 0
+        setValue(`woodBreakdown.${index}.rate_per_gf`, 0);
+      }
     });
   }, [watchedWood, woodMasters, setValue]);
 
   useEffect(() => {
-    watchedPly?.forEach((row, index) => {
+    (watchedPly || []).forEach((row: any, index: number) => {
       if (row?.isRateOverridden) return;
-      const match = findPlyMaster(row?.plyCategory || '', row?.thickness_mm || 0, plyMasters);
-      if (match) setValue(`plyBreakdown.${index}.rate_per_sqft`, match.rate_per_sqft);
+      const match = findPlyMaster(row.plyCategory, row.thickness_mm || 0, plyMasters);
+      if (match) {
+        if (row.rate_per_sqft !== match.rate_per_sqft) {
+          setValue(`plyBreakdown.${index}.rate_per_sqft`, match.rate_per_sqft);
+        }
+      } else if (row.rate_per_sqft !== 0) {
+        setValue(`plyBreakdown.${index}.rate_per_sqft`, 0);
+      }
     });
   }, [watchedPly, plyMasters, setValue]);
 
   useEffect(() => {
-    watchedFoam?.forEach((row, index) => {
+    (watchedFoam || []).forEach((row: any, index: number) => {
       if (row?.isRateOverridden) return;
-      const match = findFoamMaster(row?.foamType || '', row?.specification || '', foamMasters);
-      if (match) setValue(`foamBreakdown.${index}.master_rate`, match.base_rate);
+      const match = findFoamMaster(row.foamType, row.specification, foamMasters);
+      if (match) {
+        if (row.master_rate !== match.base_rate) {
+          setValue(`foamBreakdown.${index}.master_rate`, match.base_rate);
+        }
+      } else if (row.master_rate !== 0) {
+        setValue(`foamBreakdown.${index}.master_rate`, 0);
+      }
     });
   }, [watchedFoam, foamMasters, setValue]);
 
-  // Material Data Helpers
+  const onImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const compressed = await compressImage(reader.result as string);
+        setPreview(compressed);
+        setValue("productImage", compressed);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const woodTypes = useMemo(() => Array.from(new Set(woodMasters.map(m => m.wood_type))).sort(), [woodMasters]);
   const plyCategories = useMemo(() => Array.from(new Set(plyMasters.map(m => m.ply_category))).sort(), [plyMasters]);
   const foamTypes = useMemo(() => Array.from(new Set(foamMasters.map(m => m.foam_type))).sort(), [foamMasters]);
   const getFoamSpecs = (type: string) => foamMasters.filter(m => m.foam_type === type).map(m => m.specification).sort();
 
-  // Save Block Check
-  const missingRates = useMemo(() => {
-    const issues: string[] = [];
-    watchedWood?.forEach((r: any, i: number) => {
-      if (!r.isRateOverridden && (r.rate_per_gf || 0) === 0 && r.woodType) issues.push(`Wood #${i+1}: Missing rate for ${r.woodType}`);
-    });
-    watchedPly?.forEach((r: any, i: number) => {
-      if (!r.isRateOverridden && (r.rate_per_sqft || 0) === 0 && r.plyCategory) issues.push(`Ply #${i+1}: Missing rate for ${r.plyCategory}`);
-    });
-    watchedFoam?.forEach((r: any, i: number) => {
-      if (!r.isRateOverridden && (r.master_rate || 0) === 0 && r.foamType) issues.push(`Foam #${i+1}: Missing rate for ${r.foamType}`);
-    });
-    return issues;
-  }, [watchedWood, watchedPly, watchedFoam]);
-
   const onSubmit = async (data: Quotation) => {
-    if (missingRates.length > 0) {
-      alert("Cannot save. Please fix or override missing rates.");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      const woodCalc = data.woodBreakdown.map(r => calculateWoodRow(r));
-      const plyCalc = data.plyBreakdown.map(r => calculatePlyRow(r as any));
-      const foamCalc = data.foamBreakdown.map(r => calculateFoamRow(r as any));
-      const fabricCalc = data.fabricBreakdown.map(r => calculateFabricRow(r as any));
-      
       const summary = calculateFinalQuotation(
-        woodCalc, plyCalc, foamCalc, fabricCalc,
-        data.labour || { carpenter: 0, polish: 0, foam: 0, total: 0 },
-        data.miscellaneous || { amount: 0, total: 0 },
-        data.factoryExpensePercent || 30,
-        data.markupPercent || 20,
-        data.gstPercent || 18
+        data.woodBreakdown.map(r => calculateWoodRow(r)),
+        data.plyBreakdown.map(r => calculatePlyRow(r as any)),
+        data.foamBreakdown.map(r => calculateFoamRow(r as any)),
+        data.fabricBreakdown.map(r => calculateFabricRow(r as any)),
+        data.labour, { amount: data.miscellaneous.amount },
+        data.factoryExpensePercent, data.markupPercent, data.gstPercent,
+        data.includeGST === undefined ? true : data.includeGST
       );
-
-      const finalData = {
-        ...data,
-        refCode: generateRefCode(),
-        woodBreakdown: woodCalc,
-        plyBreakdown: plyCalc,
-        foamBreakdown: foamCalc,
-        fabricBreakdown: fabricCalc,
-        summary: summary,
-        status: 'Draft' as const,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      const id = await createQuotation(finalData as any);
-      alert("Quotation saved successfully!");
-      router.push(`/quote/view/${id}?download=true`);
-    } catch (err: any) {
-      console.error("[Submit] ❌ Error:", err);
-      alert("Error saving quotation: " + (err.message || "Unknown error occurred."));
-    } finally {
-      setIsSubmitting(false);
-    }
+      const { id, createdAt, updatedAt, ...quoteData } = data;
+      await createQuotation({ ...quoteData, refCode: generateRefCode(), summary, status: data.status || 'Draft', createdBy: 'admin' });
+      router.push('/quotes');
+    } catch (err) { alert("Error saving valuation."); } finally { setIsSubmitting(false); }
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-32 px-4 md:px-8">
-      {/* Premium Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[#2d221c] p-8 md:p-12 rounded-[2.5rem] shadow-2xl relative overflow-hidden text-white border-b-8 border-amber-600">
-        <div className="bg-grain absolute inset-0 opacity-10 pointer-events-none"></div>
-        <div className="relative z-10">
-          <h1 className="text-4xl md:text-5xl font-serif tracking-tight">New Valuation</h1>
-          <p className="text-amber-200/50 text-[10px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
-            <Calculator className="w-3.5 h-3.5" /> Bespoke Furniture Intelligence
-          </p>
-        </div>
+    <div className="min-h-screen bg-transparent pb-40">
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
         
-        <div className="relative z-10 flex items-center gap-2">
-          {[1, 2, 3, 4].map((s) => (
-            <React.Fragment key={s}>
-               <div className="flex flex-col items-center gap-2">
-                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-sm transition-all duration-500 border-t border-white/20 ${
-                    step === s ? "bg-amber-500 text-white shadow-[0_0_30px_rgba(245,158,11,0.5)] scale-110" : 
-                    step > s ? "bg-emerald-500 text-white" : "bg-white/5 text-white/30"
-                  }`}>
-                    {step > s ? "✓" : s}
-                 </div>
-                 <span className={`text-[9px] font-black uppercase tracking-widest ${step === s ? 'text-amber-400' : 'text-white/20'}`}>
-                    {s === 1 ? 'Client' : s === 2 ? 'Structure' : s === 3 ? 'Soft' : 'Finishing'}
-                 </span>
-               </div>
-               {s < 4 && <div className={`w-10 h-px mb-4 transition-colors duration-500 ${step > s ? 'bg-emerald-500/30' : 'bg-white/10'}`}></div>}
-            </React.Fragment>
+        {/* Step Nav */}
+        <div className="mb-10 flex gap-4 overflow-x-auto no-scrollbar py-4">
+          {STEPS.map((s) => (
+            <button key={s.id} onClick={() => setStep(s.id)} className={`flex items-center gap-3 px-6 py-3 rounded-2xl transition-all shrink-0 ${step === s.id ? 'bg-[#2d221c] text-white shadow-lg' : 'bg-white text-gray-400 hover:bg-amber-50'}`}>
+              <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${step === s.id ? 'bg-amber-500 text-white' : 'bg-gray-100'}`}>{s.id}</span>
+              <p className="text-[10px] font-black uppercase tracking-widest">{s.title}</p>
+            </button>
           ))}
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <form onSubmit={handleSubmit(onSubmit)} className="lg:col-span-8 space-y-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+          
           {/* STEP 1: IDENTITY */}
           {step === 1 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-               <div className="bg-white p-10 rounded-[2rem] shadow-wood border border-amber-900/5 relative overflow-hidden">
-                  <div className="bg-grain absolute inset-0 opacity-[0.03] pointer-events-none"></div>
-                  <div className="flex items-center gap-4 mb-10">
-                     <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-700 shadow-inner">
-                        <User className="w-7 h-7" />
-                     </div>
-                     <div>
-                        <h2 className="text-3xl font-serif text-[#2d221c]">Client Identity</h2>
-                        <p className="text-[10px] font-black text-amber-900/40 uppercase tracking-[0.2em]">Project Origin & Specification</p>
-                     </div>
-                  </div>
-
+            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-500">
+               <div className="bg-white p-8 md:p-14 rounded-[30px] border border-amber-900/5 shadow-wood relative">
+                  <div className="flex items-center gap-4 mb-10"><User className="text-amber-700 w-6 h-6" /><h2 className="text-2xl font-serif text-[#2d221c]">Project Identity</h2></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div className="space-y-6">
-                      <Input label="Customer Name" placeholder="e.g. Prestige Woodworks" {...register("customerName", { required: "Customer name is required" })} error={errors.customerName?.message} />
-                      <Select label="Customer Type" options={CUSTOMER_TYPES.map(t => ({ label: t, value: t }))} {...register("customerType")} />
-                      <Input label="Valuation Date" type="date" {...register("date")} />
+                    <div className="space-y-8">
+                      <Input label="Customer Name" placeholder="e.g. John Doe" {...register("customerName", { required: true })} />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <Select label="Category" options={PRODUCT_CATEGORIES.map(c => ({ label: c, value: c }))} {...register("productCategory")} />
+                        <Select label="Type of Client" options={CLIENT_TYPES.map(t => ({ label: t, value: t }))} {...register("customerType")} />
+                      </div>
+                      <div className="flex items-center gap-4 p-4 bg-amber-50/50 rounded-2xl border border-amber-900/5">
+                        <Calendar className="w-5 h-5 text-amber-700 opacity-50" /><Input label="Valuation Date" type="date" {...register("date")} className="bg-transparent border-none p-0 h-auto w-full" />
+                      </div>
                     </div>
-                    
-                    <div className="space-y-6">
-                      <Input label="Product Name" placeholder="e.g. Wingback Lounge Chair" {...register("productName", { required: "Product name is required" })} error={errors.productName?.message} />
-                      <Input label="Category" placeholder="e.g. Seating" {...register("productCategory", { required: "Category is required" })} error={errors.productCategory?.message} />
-                    </div>
-
-                    <div className="md:col-span-2 pt-10 border-t border-amber-900/5">
-                       <p className="text-[10px] font-black text-amber-900/60 uppercase tracking-[0.2em] mb-6">Visual Reference (Product Drawing)</p>
-                       <div className="flex flex-col md:flex-row items-center gap-8">
-                          <div className="w-48 h-48 rounded-3xl bg-amber-50 border-2 border-dashed border-amber-900/10 flex items-center justify-center overflow-hidden group shadow-inner">
-                             {watchedImage ? (
-                               <img src={watchedImage as any} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Preview" />
-                             ) : (
-                               <Package className="w-12 h-12 text-amber-900/10" />
-                             )}
-                          </div>
-                          <div className="space-y-4 text-center md:text-left">
-                             <input type="file" accept="image/*" id="image-upload" className="hidden" onChange={(e) => {
-                               const file = e.target.files?.[0];
-                               if (file) {
-                                 const reader = new FileReader();
-                                 reader.onloadend = async () => {
-                                   const originalDataUrl = reader.result as string;
-                                   const compressed = await compressImage(originalDataUrl, 800, 0.7);
-                                   setValue("productImage", compressed);
-                                 };
-                                 reader.readAsDataURL(file);
-                               }
-                             }} />
-                             <label htmlFor="image-upload" className="px-8 py-4 bg-[#2d221c] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] cursor-pointer hover:bg-black shadow-lg transition-all flex items-center gap-3">
-                                <Plus className="w-4 h-4" /> Upload Technical Drawing
-                             </label>
-                             {watchedImage && (
-                               <button type="button" onClick={() => setValue("productImage", undefined)} className="text-[10px] text-rose-500 font-bold uppercase tracking-widest hover:underline block mx-auto md:mx-0">Remove Ref Image</button>
-                             )}
-                          </div>
+                    <div className="space-y-4">
+                       <label className="text-xs font-bold uppercase tracking-widest block ml-1">Image Inserting</label>
+                       <div className="relative aspect-video rounded-[30px] border-2 border-dashed border-amber-900/10 bg-amber-50/20 flex flex-col items-center justify-center overflow-hidden group hover:border-amber-500/50 transition-all">
+                          {preview ? (<><img src={preview} className="w-full h-full object-cover" /><button onClick={() => setPreview(null)} className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full"><X className="w-4 h-4" /></button></>) : (
+                            <label className="cursor-pointer flex flex-col items-center gap-3"><div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-700"><Camera className="w-8 h-8" /></div><p className="text-[10px] font-black uppercase text-amber-900/40">Tap to Upload</p><input type="file" accept="image/*" onChange={onImageChange} className="hidden" /></label>
+                          )}
                        </div>
                     </div>
                   </div>
                </div>
-
-               <div className="flex justify-end pt-4">
-                  <Button type="button" onClick={() => setStep(2)} className="h-16 px-12 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white shadow-2xl shadow-amber-900/20 text-xl font-serif tracking-wide group">
-                    Next: Structural Breakdown <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-               </div>
+               <div className="flex justify-end"><Button type="button" onClick={() => setStep(2)} className="h-20 px-16 rounded-3xl bg-[#2d221c] text-white text-xl font-serif">Define Structure <ArrowRight className="ml-4" /></Button></div>
             </div>
           )}
 
-          {/* STEP 2: STRUCTURAL MATERIALS (Wood/Ply) */}
+          {/* STEP 2: STRUCTURE */}
           {step === 2 && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-               {/* Wood Section */}
-               <div className="bg-white p-8 rounded-[2rem] shadow-wood border border-amber-900/5 relative">
-                  <div className="bg-grain absolute inset-0 opacity-[0.03] pointer-events-none"></div>
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-700">
-                          <Trees className="w-6 h-6" />
-                       </div>
-                       <h2 className="text-2xl font-serif text-[#2d221c]">Solid Wood Components</h2>
-                    </div>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendWood({ id: `w_${Date.now()}`, componentName: '', woodType: (woodTypes[0] || ''), length_ft: 0, width_in: 0, thickness_in: 0, quantity: 1, rate_per_gf: 0, gun_foot: 0, total_cost: 0, isRateOverridden: false })} className="border-amber-900/10 text-amber-800 hover:bg-amber-50 font-black uppercase tracking-tighter text-[10px]">
-                       <Plus className="w-3.5 h-3.5 mr-1" /> Add Component
-                    </Button>
-                  </div>
-
+            <div className="space-y-10 animate-in fade-in duration-500">
+               <div className="bg-white p-6 md:p-10 rounded-[30px] shadow-wood border border-amber-900/5">
+                  <div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-serif flex items-center gap-4"><Trees className="text-amber-700" /> Wood Breakdown</h2><Button type="button" onClick={() => appendWood({ id: Date.now().toString(), componentName: '', woodType: (woodTypes[0] || ''), length_ft: 0, width_in: 0, thickness_in: 0, quantity: 1, wastage_percent: 7.5, rate_per_gf: 0, gun_foot: 0, total_cost: 0, isRateOverridden: false })} variant="outline" className="text-[10px] font-black uppercase">+ Add Row</Button></div>
                   <div className="space-y-4">
                     {woodFields.map((field, index) => {
                       const row = watchedWood?.[index] as any;
-                      const gf = row ? calculateGunFoot(row.length_ft || 0, row.width_in || 0, row.thickness_in || 0, row.quantity || 0) : 0;
-                      const hasRate = row?.isRateOverridden || (row?.rate_per_gf || 0) > 0;
-                      
+                      const hasRateMatch = !!findWoodMaster(row?.woodType, row?.length_ft, row?.width_in, row?.thickness_in, woodMasters);
                       return (
-                        <div key={field.id} className={`p-5 rounded-2xl border transition-all ${!hasRate && row?.woodType ? 'bg-rose-50/50 border-rose-200' : 'bg-amber-50/10 border-amber-900/5 hover:border-amber-500/30'}`}>
-                          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-4 items-end">
-                            <div className="md:col-span-2 lg:col-span-3">
-                               <Input label="Part Name" placeholder="e.g. Main Frame" {...register(`woodBreakdown.${index}.componentName`)} />
-                            </div>
-                            <div className="lg:col-span-2">
-                               <Select label="Wood" options={woodTypes.map(t => ({ label: t, value: t }))} {...register(`woodBreakdown.${index}.woodType`)} />
-                            </div>
-                            <div className="flex gap-2 lg:col-span-3">
-                               <Input label="L (ft)" type="number" step="0.01" {...register(`woodBreakdown.${index}.length_ft`, { valueAsNumber: true })} />
-                               <Input label="W (in)" type="number" step="0.01" {...register(`woodBreakdown.${index}.width_in`, { valueAsNumber: true })} />
-                               <Input label="T (in)" type="number" step="0.01" {...register(`woodBreakdown.${index}.thickness_in`, { valueAsNumber: true })} />
-                            </div>
-                            <div className="lg:col-span-1">
-                               <Input label="Qty" type="number" {...register(`woodBreakdown.${index}.quantity`, { valueAsNumber: true })} />
-                            </div>
-                            <div className="lg:col-span-2 relative">
-                               <Input label="Rate/GF" type="number" step="0.01" readOnly={!row?.isRateOverridden} {...register(`woodBreakdown.${index}.rate_per_gf`, { valueAsNumber: true })} className={row?.isRateOverridden ? "bg-amber-100/50" : "bg-white"} />
-                               <button type="button" onClick={() => setValue(`woodBreakdown.${index}.isRateOverridden`, !row?.isRateOverridden)} className={`absolute right-2 top-11 transition-colors ${row?.isRateOverridden ? 'text-amber-600' : 'text-amber-900/10 hover:text-amber-500'}`} title="Override rate">
-                                  <AlertCircle className="w-3.5 h-3.5" />
-                               </button>
-                            </div>
-                            <div className="flex items-center justify-end gap-3 lg:col-span-1 pb-2">
-                               <div className="text-right">
-                                  <p className="text-[9px] font-black text-amber-900/20 uppercase">{gf.toFixed(2)}gf</p>
-                                  <p className="text-sm font-black text-[#2d221c]">₹{((row?.rate_per_gf || 0) * gf).toLocaleString()}</p>
-                                </div>
-                               <button type="button" onClick={() => removeWood(index)} className="p-1.5 text-amber-900/10 hover:text-rose-500 transition-colors">
-                                  <Trash2 className="w-4 h-4" />
-                               </button>
-                            </div>
-                          </div>
-                        </div>
+                        <div key={field.id} className="p-4 rounded-[20px] bg-amber-50/10 border border-amber-900/5"><div className="grid grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                           <div className="col-span-2 lg:col-span-3"><Input label="Part Name" {...register(`woodBreakdown.${index}.componentName`)} /></div>
+                           <div className="col-span-2 lg:col-span-2"><Select options={woodTypes.map(t => ({ label: t, value: t }))} {...register(`woodBreakdown.${index}.woodType`)} /></div>
+                           <div className="col-span-1"><Input label="L (ft)" {...register(`woodBreakdown.${index}.length_ft`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-1"><Input label="W (in)" {...register(`woodBreakdown.${index}.width_in`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-1"><Input label="T (in)" {...register(`woodBreakdown.${index}.thickness_in`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-1"><Input label="Wast %" {...register(`woodBreakdown.${index}.wastage_percent`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-1"><Input label="Qty" {...register(`woodBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-2">
+                             <label className="text-[8px] font-black uppercase tracking-tighter block mb-1 opacity-40">Sectional Foot (GF)</label>
+                             <div className="h-12 flex items-center px-4 bg-amber-50/30 rounded-xl border border-amber-900/5 text-sm font-bold text-amber-900/60">
+                               {row?.gun_foot || 0}
+                             </div>
+                           </div>
+                           <div className="col-span-2 relative">
+                              <Input label="Rate" readOnly={hasRateMatch} {...register(`woodBreakdown.${index}.rate_per_gf`, { valueAsNumber: true })} />
+                              {hasRateMatch ? (
+                                <p className="absolute left-1 -bottom-4 text-[8px] font-black text-amber-600/40 uppercase tracking-tighter italic">Auto-Locked from Master</p>
+                              ) : (
+                                row?.length_ft > 0 && <p className="absolute left-1 -bottom-4 text-[8px] font-black text-rose-500 uppercase tracking-tighter animate-pulse">Enter Custom Price</p>
+                              )}
+                           </div>
+                           <div className="col-span-2 lg:col-span-1 flex justify-center"><button type="button" onClick={() => removeWood(index)}><Trash2 className="w-5 h-5 text-rose-500" /></button></div>
+                        </div></div>
                       );
                     })}
                   </div>
                </div>
-
-               {/* Plywood Section */}
-               <div className="bg-white p-8 rounded-[2rem] shadow-wood border border-amber-900/5 relative">
-                  <div className="bg-grain absolute inset-0 opacity-[0.03] pointer-events-none"></div>
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-700">
-                          <Layers className="w-6 h-6" />
-                       </div>
-                       <h2 className="text-2xl font-serif text-[#2d221c]">Engineering Board (Ply)</h2>
-                    </div>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendPly({ id: `p_${Date.now()}`, componentName: '', plyCategory: (plyCategories[0] || 'plywood'), thickness_mm: 18, sheet_length_ft: 8, sheet_width_ft: 4, cut_length_in: 0, cut_width_in: 0, quantity: 1, sqft: 0, wastage_percent: 5, wastage_amount: 0, rate_per_sqft: 0, isRateOverridden: false, total_cost: 0 })} className="border-blue-900/10 text-blue-800 hover:bg-blue-50 font-black uppercase tracking-tighter text-[10px]">
-                       <Plus className="w-3.5 h-3.5 mr-1" /> Add Component
-                    </Button>
-                  </div>
-
+               
+               {/* Plywood */}
+               <div className="bg-white p-6 md:p-10 rounded-[30px] shadow-wood border border-amber-900/5">
+                  <div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-serif flex items-center gap-4"><Layers className="text-blue-700" /> Engineering Board (Ply)</h2><Button type="button" onClick={() => appendPly({ id: Date.now().toString(), componentName: '', plyCategory: (plyCategories[0] || 'plywood'), thickness_mm: 18, sheet_length_ft: 8, sheet_width_ft: 4, cut_length_in: 0, cut_width_in: 0, quantity: 1, sqft: 0, wastage_percent: 5, wastage_amount: 0, rate_per_sqft: 0, isRateOverridden: false, total_cost: 0 })} variant="outline" className="text-[10px] font-black uppercase">+ Add Ply</Button></div>
                   <div className="space-y-4">
                     {plyFields.map((field, index) => {
                       const row = watchedPly?.[index] as any;
-                      const sqft = row ? (row.cut_length_in * row.cut_width_in * row.quantity) / 144 : 0;
-                      const hasRate = row?.isRateOverridden || (row?.rate_per_sqft || 0) > 0;
-
                       return (
-                        <div key={field.id} className="p-5 rounded-2xl bg-blue-50/5 border border-blue-900/5 hover:border-blue-500/30 transition-all shadow-sm">
-                           <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-4 items-end">
-                              <div className="md:col-span-2 lg:col-span-3"><Input label="Part" placeholder="Seat Base" {...register(`plyBreakdown.${index}.componentName`)} /></div>
-                              <div className="lg:col-span-2"><Select label="Category" options={plyCategories.map(c => ({ label: c, value: c }))} {...register(`plyBreakdown.${index}.plyCategory`)} /></div>
-                              <div className="lg:col-span-1"><Input label="T (mm)" type="number" {...register(`plyBreakdown.${index}.thickness_mm`, { valueAsNumber: true })} /></div>
-                              <div className="flex gap-2 lg:col-span-2"><Input label="L (in)" type="number" {...register(`plyBreakdown.${index}.cut_length_in`, { valueAsNumber: true })} /><Input label="W (in)" type="number" {...register(`plyBreakdown.${index}.cut_width_in`, { valueAsNumber: true })} /></div>
-                              <div className="lg:col-span-1"><Input label="Qty" type="number" {...register(`plyBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
-                              <div className="lg:col-span-2 relative"><Input label="Rate/SF" type="number" readOnly={!row?.isRateOverridden} {...register(`plyBreakdown.${index}.rate_per_sqft`, { valueAsNumber: true })} className={row?.isRateOverridden ? "bg-blue-100/30" : "bg-white"} /><button type="button" onClick={() => setValue(`plyBreakdown.${index}.isRateOverridden`, !row?.isRateOverridden)} className={`absolute right-2 top-11 transition-colors ${row?.isRateOverridden ? 'text-blue-600' : 'text-blue-900/10 hover:text-blue-500'}`}><AlertCircle className="w-3.5 h-3.5" /></button></div>
-                              <div className="flex items-center justify-end gap-3 lg:col-span-1 pb-2">
-                                 <div className="text-right"><p className="text-[9px] font-black text-blue-900/20 uppercase">{sqft.toFixed(2)}sf</p><p className="text-sm font-black text-[#2d221c]">₹{((row?.rate_per_sqft || 0) * sqft).toLocaleString()}</p></div>
-                                 <button type="button" onClick={() => removePly(index)} className="p-1.5 text-blue-900/10 hover:text-rose-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                              </div>
+                        <div key={field.id} className="p-4 rounded-[20px] bg-blue-50/10 border border-blue-900/5"><div className="grid grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                           <div className="col-pan-2 lg:col-span-3"><Input label="Allocation" {...register(`plyBreakdown.${index}.componentName`)} /></div>
+                           <div className="col-span-2 lg:col-span-2"><Select options={plyCategories.map(c => ({ label: c, value: c }))} {...register(`plyBreakdown.${index}.plyCategory`)} /></div>
+                           <div className="col-span-1"><Input label="L (in)" {...register(`plyBreakdown.${index}.cut_length_in`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-1"><Input label="W (in)" {...register(`plyBreakdown.${index}.cut_width_in`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-1"><Input label="Qty" {...register(`plyBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-1"><Input label="MM" {...register(`plyBreakdown.${index}.thickness_mm`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-2 relative">
+                              <Input label="Rate" readOnly={hasRateMatch} {...register(`plyBreakdown.${index}.rate_per_sqft`, { valueAsNumber: true })} />
+                              {hasRateMatch ? (
+                                <p className="absolute left-1 -bottom-4 text-[8px] font-black text-blue-600/40 uppercase tracking-tighter italic">Auto-Locked</p>
+                              ) : (
+                                row?.cut_length_in > 0 && <p className="absolute left-1 -bottom-4 text-[8px] font-black text-rose-500 uppercase tracking-tighter animate-pulse">Enter Custom Price</p>
+                              )}
                            </div>
-                        </div>
+                           <div className="col-span-2 lg:col-span-1 flex justify-center"><button type="button" onClick={() => removePly(index)}><Trash2 className="w-5 h-5 text-rose-500" /></button></div>
+                        </div></div>
                       );
                     })}
                   </div>
                </div>
 
-               <div className="flex justify-between items-center pt-8 border-t border-amber-900/5">
-                  <Button type="button" variant="ghost" onClick={() => setStep(1)} className="h-16 px-10 rounded-2xl text-[#2d221c] font-serif group hover:bg-amber-50"><ArrowLeft className="w-5 h-5 mr-3 group-hover:-translate-x-1 transition-transform" /> Back to Client Hub</Button>
-                  <Button type="button" onClick={() => setStep(3)} className="h-16 px-12 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white shadow-2xl shadow-amber-900/20 text-xl font-serif tracking-wide group">Next: Soft Materials <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" /></Button>
-               </div>
+               <div className="flex justify-between items-center"><Button type="button" onClick={() => setStep(1)} variant="ghost" className="h-16 px-10">Back</Button><Button type="button" onClick={() => setStep(3)} className="h-16 px-16 bg-[#2d221c] text-white rounded-2xl">Comfort Layer <ArrowRight className="ml-4" /></Button></div>
             </div>
           )}
 
-          {/* STEP 3: SOFT MATERIALS (Foam/Fabric) */}
+          {/* STEP 3: COMFORT */}
           {step === 3 && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-               {/* Foam Section */}
-               <div className="bg-white p-8 rounded-[2rem] shadow-wood border border-amber-900/5 relative">
-                  <div className="bg-grain absolute inset-0 opacity-[0.03] pointer-events-none"></div>
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-700">
-                          <Wind className="w-6 h-6" />
-                       </div>
-                       <h2 className="text-2xl font-serif text-[#2d221c]">Foam & Padding</h2>
-                    </div>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendFoam({ id: `f_${Date.now()}`, componentName: '', foamType: (foamTypes[0] || 'PU'), specification: 'Standard', thickness_in: 0, cut_length_in: 0, cut_width_in: 0, quantity: 1, sqft: 0, master_rate: 0, rate_per_sqft: 0, wastage_percent: 5, wastage_amount: 0, isRateOverridden: false, total_cost: 0 })} className="border-orange-900/10 text-orange-800 hover:bg-orange-50 font-black uppercase tracking-tighter text-[10px]">
-                       <Plus className="w-3.5 h-3.5 mr-1" /> Add Component
-                    </Button>
-                  </div>
-
+            <div className="space-y-10 animate-in fade-in duration-500">
+               <div className="bg-white p-6 md:p-10 rounded-[30px] shadow-wood border border-amber-900/5">
+                  <div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-serif flex items-center gap-4"><Wind className="text-orange-700" /> Foam & Cushioning</h2><Button type="button" onClick={() => appendFoam({ id: Date.now().toString(), componentName: '', foamType: (foamTypes[0] || 'PU'), specification: '32D', thickness_in: 0, cut_length_in: 0, cut_width_in: 0, quantity: 1, sqft: 0, master_rate: 0, rate_per_sqft: 0, wastage_percent: 5, wastage_amount: 0, isRateOverridden: false, total_cost: 0 })} variant="outline" className="text-[10px] font-black uppercase">+ Add Layer</Button></div>
                   <div className="space-y-4">
                     {foamFields.map((field, index) => {
                       const row = watchedFoam?.[index] as any;
-                      const sqft = row ? (row.cut_length_in * row.cut_width_in * row.quantity) / 144 : 0;
-                      const hasRate = row?.isRateOverridden || (row?.master_rate || 0) > 0;
-                      const derivedPerSqft = ((row?.master_rate || 0) * (row?.thickness_in || 0)) / 18;
-
+                      const hasRateMatch = !!findFoamMaster(row?.foamType, row?.specification, foamMasters);
                       return (
-                        <div key={field.id} className="p-5 rounded-2xl bg-orange-50/5 border border-orange-900/5 hover:border-orange-500/30 transition-all shadow-sm">
-                           <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-4 items-end">
-                              <div className="md:col-span-2 lg:col-span-3"><Input label="Part" placeholder="Seat Cushion" {...register(`foamBreakdown.${index}.componentName`)} /></div>
-                              <div className="lg:col-span-2"><Select label="Foam" options={foamTypes.map(t => ({ label: t, value: t }))} {...register(`foamBreakdown.${index}.foamType`)} /></div>
-                              <div className="lg:col-span-2"><Select label="Spec" options={getFoamSpecs(row?.foamType || '').map(s => ({ label: s, value: s }))} {...register(`foamBreakdown.${index}.specification`)} /></div>
-                              <div className="flex gap-2 lg:col-span-2"><Input label="T (in)" type="number" step="0.5" {...register(`foamBreakdown.${index}.thickness_in`, { valueAsNumber: true })} /><Input label="Qty" type="number" {...register(`foamBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
-                              <div className="lg:col-span-2 relative"><Input label="Rate" type="number" readOnly={!row?.isRateOverridden} {...register(`foamBreakdown.${index}.master_rate`, { valueAsNumber: true })} className={row?.isRateOverridden ? "bg-orange-100/30" : "bg-white"} /><button type="button" onClick={() => setValue(`foamBreakdown.${index}.isRateOverridden`, !row?.isRateOverridden)} className={`absolute right-2 top-11 transition-colors ${row?.isRateOverridden ? 'text-orange-600' : 'text-orange-900/10 hover:text-orange-500'}`}><AlertCircle className="w-3.5 h-3.5" /></button></div>
-                              <div className="flex items-center justify-end gap-3 lg:col-span-1 pb-2">
-                                 <div className="text-right">
-                                    <p className="text-[9px] font-black text-orange-900/20 uppercase">{sqft.toFixed(1)}sf · ₹{derivedPerSqft.toFixed(0)}/sf</p>
-                                    <p className="text-sm font-black text-[#2d221c]">₹{((derivedPerSqft || 0) * sqft).toLocaleString()}</p>
-                                 </div>
-                                 <button type="button" onClick={() => removeFoam(index)} className="p-1.5 text-orange-900/10 hover:text-rose-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                              </div>
+                        <div key={field.id} className="p-4 rounded-[20px] bg-orange-50/10 border border-orange-900/5"><div className="grid grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                           <div className="col-span-2 lg:col-span-3"><Input label="Foam Area" {...register(`foamBreakdown.${index}.componentName`)} /></div>
+                           <div className="col-span-2 lg:col-span-2"><Select options={foamTypes.map(t => ({ label: t, value: t }))} {...register(`foamBreakdown.${index}.foamType`)} /></div>
+                           <div className="col-span-2 lg:col-span-2"><Select options={getFoamSpecs(row?.foamType || '').map(s => ({ label: s, value: s }))} {...register(`foamBreakdown.${index}.specification`)} /></div>
+                           <div className="col-span-1"><Input label="L" {...register(`foamBreakdown.${index}.cut_length_in`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-1"><Input label="W" {...register(`foamBreakdown.${index}.cut_width_in`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-1"><Input label="Qty" {...register(`foamBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
+                           <div className="col-span-2 relative">
+                              <Input label="Rate" readOnly={hasRateMatch} {...register(`foamBreakdown.${index}.master_rate`, { valueAsNumber: true })} />
+                              {hasRateMatch ? (
+                                <p className="absolute left-1 -bottom-4 text-[8px] font-black text-orange-600/40 uppercase tracking-tighter italic">Auto-Locked</p>
+                              ) : (
+                                row?.cut_length_in > 0 && <p className="absolute left-1 -bottom-4 text-[8px] font-black text-rose-500 uppercase tracking-tighter animate-pulse">Enter Custom Price</p>
+                              )}
                            </div>
-                        </div>
+                           <div className="col-span-1 flex justify-center"><button type="button" onClick={() => removeFoam(index)}><Trash2 className="w-5 h-5 text-rose-500" /></button></div>
+                        </div></div>
                       );
                     })}
                   </div>
                </div>
-
-               {/* Fabric Section */}
-               <div className="bg-white p-8 rounded-[2rem] shadow-wood border border-amber-900/5 relative">
-                  <div className="bg-grain absolute inset-0 opacity-[0.03] pointer-events-none"></div>
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-700">
-                          <Package className="w-6 h-6" />
-                       </div>
-                       <h2 className="text-2xl font-serif text-[#2d221c]">Fabric & Upholstery</h2>
-                    </div>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendFabric({ id: `fab_${Date.now()}`, componentName: '', fabricType: '', metersRequired: 0, wastagePercent: 0, ratePerMeter: 0, totalCost: 0, isCustomRate: false })} className="border-purple-900/10 text-purple-800 hover:bg-purple-50 font-black uppercase tracking-tighter text-[10px]">
-                       <Plus className="w-3.5 h-3.5 mr-1" /> Add Row
-                    </Button>
-                  </div>
-
-                  <div className="space-y-4">
-                    {fabricFields.map((field, index) => {
-                      const row = (watch("fabricBreakdown") as any)?.[index];
-                      const cost = (row?.metersRequired || 0) * (row?.ratePerMeter || 0);
-
-                      return (
-                        <div key={field.id} className="p-5 rounded-2xl bg-purple-50/5 border border-purple-900/5 hover:border-purple-500/30 transition-all shadow-sm">
-                           <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-4 items-end">
-                              <div className="md:col-span-2 lg:col-span-3"><Input label="Upholstery Part" {...register(`fabricBreakdown.${index}.componentName`)} /></div>
-                              <div className="lg:col-span-3"><Input label="Fabric Ref" {...register(`fabricBreakdown.${index}.fabricType`)} /></div>
-                              <div className="lg:col-span-1"><Input label="Meters" type="number" step="0.1" {...register(`fabricBreakdown.${index}.metersRequired`, { valueAsNumber: true })} /></div>
-                              <div className="lg:col-span-2"><Input label="Rate" type="number" {...register(`fabricBreakdown.${index}.ratePerMeter`, { valueAsNumber: true })} /></div>
-                              <div className="lg:col-span-1"><Input label="Wastage%" type="number" {...register(`fabricBreakdown.${index}.wastagePercent`, { valueAsNumber: true })} /></div>
-                              <div className="flex items-center justify-end gap-3 lg:col-span-2 pb-2">
-                                 <div className="text-right"><p className="text-sm font-black text-[#2d221c]">₹{cost.toLocaleString()}</p></div>
-                                 <button type="button" onClick={() => removeFabric(index)} className="p-1.5 text-purple-900/10 hover:text-rose-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                              </div>
-                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-               </div>
-
-               <div className="flex justify-between items-center pt-8 border-t border-amber-900/5">
-                  <Button type="button" variant="ghost" onClick={() => setStep(2)} className="h-16 px-10 rounded-2xl text-[#2d221c] font-serif group hover:bg-amber-50"><ArrowLeft className="w-5 h-5 mr-3 group-hover:-translate-x-1 transition-transform" /> Back to Structure</Button>
-                  <Button type="button" onClick={() => setStep(4)} className="h-16 px-12 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white shadow-2xl shadow-amber-900/20 text-xl font-serif tracking-wide group">Finalize: Internal Audit <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" /></Button>
-               </div>
+               <div className="flex justify-between items-center"><Button type="button" onClick={() => setStep(2)} variant="ghost" className="h-16 px-10">Back</Button><Button type="button" onClick={() => setStep(4)} className="h-16 px-16 bg-[#2d221c] text-white rounded-2xl">Final Audit <ArrowRight className="ml-4" /></Button></div>
             </div>
           )}
 
-          {/* STEP 4: FINAL AUDIT */}
+          {/* STEP 4: FINALIZE */}
           {step === 4 && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-               <div className="bg-white p-10 rounded-[2rem] shadow-wood border border-amber-900/5 relative">
-                  <div className="bg-grain absolute inset-0 opacity-[0.03] pointer-events-none"></div>
-                  <div className="flex items-center gap-4 mb-10">
-                     <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-700">
-                        <ClipboardCheck className="w-7 h-7" />
-                     </div>
-                     <h2 className="text-3xl font-serif text-[#2d221c]">Labour & Factory Overheads</h2>
-                  </div>
-
+            <div className="space-y-10 animate-in fade-in duration-500">
+               <div className="bg-white p-10 rounded-[30px] border border-amber-900/5 shadow-wood">
+                  <div className="flex items-center gap-4 mb-10"><Activity className="text-amber-700" /><h2 className="text-2xl font-serif">Labour & Margin Audit</h2></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <div className="space-y-6">
-                       <h4 className="text-[10px] font-black uppercase text-amber-900/40 tracking-widest border-b border-amber-900/5 pb-2">Labour Rates (₹)</h4>
                        <Input label="Carpenter Labour" type="number" {...register("labour.carpenter", { valueAsNumber: true })} />
                        <Input label="Polish/Painting" type="number" {...register("labour.polish", { valueAsNumber: true })} />
-                       <Input label="Foam/Upholstery Labour" type="number" {...register("labour.foam", { valueAsNumber: true })} />
+                       <Input label="Upholstery Labour" type="number" {...register("labour.foam", { valueAsNumber: true })} />
                        <Input label="Miscellaneous Fittings" type="number" {...register("miscellaneous.amount", { valueAsNumber: true })} />
                     </div>
-
-                    <div className="space-y-6">
-                       <h4 className="text-[10px] font-black uppercase text-amber-900/40 tracking-widest border-b border-amber-900/5 pb-2">Factory Settings (%)</h4>
-                       <Select label="Factory Expense %" options={[{label:'30% (Standard)', value:30}, {label:'35% (Complex)', value:35}, {label:'40% (Premium)', value:40}]} {...register("factoryExpensePercent", { valueAsNumber: true })} />
+                     <div className="space-y-6 bg-amber-50/20 p-8 rounded-3xl border border-amber-900/5">
+                        <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-amber-900/5 shadow-sm">
+                           <div>
+                              <p className="text-xs font-black uppercase tracking-widest text-[#2d221c]">Apply GST Tax</p>
+                              <p className="text-[8px] text-amber-900/40 font-bold uppercase mt-1">Include 18% in final total?</p>
+                           </div>
+                           <input type="checkbox" {...register("includeGST")} className="w-6 h-6 rounded-lg accent-[#2d221c]" />
+                        </div>
                        <Input label="Profit Margin %" type="number" {...register("markupPercent", { valueAsNumber: true })} />
-                       <Input label="Tax Calculation (GST %)" type="number" {...register("gstPercent", { valueAsNumber: true })} />
+                       <Input label="Applied GST %" type="number" {...register("gstPercent", { valueAsNumber: true })} />
+                       <Select label="Factory Expense %" options={[{label:'30% (Standard)', value:30}, {label:'35% (Complex)', value:35}, {label:'40% (Premium)', value:40}]} {...register("factoryExpensePercent", { valueAsNumber: true })} />
                     </div>
                   </div>
                </div>
-
-               {missingRates.length > 0 && (
-                 <div className="p-8 bg-rose-50 border border-rose-100 rounded-[2rem] flex items-start gap-6">
-                    <AlertTriangle className="w-8 h-8 text-rose-500 shrink-0" />
-                    <div>
-                       <p className="text-sm font-black text-rose-900 uppercase tracking-widest mb-2">Valuation Blocked</p>
-                       <p className="text-[11px] text-rose-700 leading-relaxed mb-6">Please fix missing master rates before saving this quotation. Use the ⚠ icon on any material row to manually override its rate from the masters library.</p>
-                       <ul className="text-[10px] font-serif text-rose-800 space-y-2 list-disc list-inside bg-white/50 p-6 rounded-2xl border border-rose-200/50">
-                          {missingRates.map((msg, i) => <li key={i}>{msg}</li>)}
-                       </ul>
-                    </div>
-                 </div>
-               )}
-
-               <div className="flex justify-between items-center pt-8 border-t border-amber-900/5">
-                  <Button type="button" variant="ghost" onClick={() => setStep(3)} className="h-16 px-10 rounded-2xl text-[#2d221c] font-serif group hover:bg-amber-50"><ArrowLeft className="w-5 h-5 mr-3 group-hover:-translate-x-1 transition-transform" /> Back to Materials</Button>
-                  <Button type="submit" disabled={missingRates.length > 0 || isSubmitting} className="h-16 px-12 rounded-2xl bg-[#2d221c] hover:bg-black text-white shadow-2xl shadow-black/30 text-xl font-serif tracking-wide group">
-                    {isSubmitting ? 'Architecting...' : <><Save className="w-6 h-6 mr-3" /> Save Factory Valuation</>}
+               <div className="flex justify-between items-center">
+                  <Button type="button" onClick={() => setStep(3)} variant="ghost" className="h-16 px-10">Back</Button>
+                  <Button type="submit" disabled={isSubmitting} className="h-20 px-20 bg-black text-white rounded-3xl text-2xl font-serif shadow-2xl hover:scale-105 transition-all">
+                    {isSubmitting ? 'Syncing...' : 'Finalize Valuation'}
                   </Button>
                </div>
             </div>
           )}
         </form>
 
-        {/* FLOATING INTELLIGENCE HUB */}
-        <IntelligenceHub control={control} missingRates={missingRates} customerName={watchedCustomerName} />
+        <LiveValuationBar control={control} />
       </div>
     </div>
   );
 }
 
-/**
- * INTELLIGENCE HUB COMPONENT
- * Extracted to prevent re-rendering the whole form on every keystroke.
- * Includes the "Pop-up" behavior requested.
- */
-function IntelligenceHub({ control, missingRates, customerName }: { control: any, missingRates: string[], customerName?: string }) {
-  const [isOpen, setIsOpen] = useState(false);
+function LiveValuationBar({ control }: { control: any }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const watchedValues = useWatch({ control });
+  const deferredValues = React.useDeferredValue(watchedValues);
   
-  const summary = useMemo(() => {
-    return calculateFinalQuotation(
-      (watchedValues.woodBreakdown || []).map((r: any) => calculateWoodRow(r as any)),
-      (watchedValues.plyBreakdown || []).map((r: any) => calculatePlyRow(r as any)),
-      (watchedValues.foamBreakdown || []).map((r: any) => calculateFoamRow(r as any)),
-      (watchedValues.fabricBreakdown || []).map((r: any) => calculateFabricRow(r as any)),
-      watchedValues.labour ? { 
-        carpenter: watchedValues.labour.carpenter || 0, 
-        polish: watchedValues.labour.polish || 0, 
-        foam: watchedValues.labour.foam || 0 
-      } : { carpenter: 0, polish: 0, foam: 0 },
-      watchedValues.miscellaneous ? { amount: watchedValues.miscellaneous.amount || 0 } : { amount: 0 },
-      watchedValues.factoryExpensePercent || 30,
-      watchedValues.markupPercent || 20,
-      watchedValues.gstPercent || 18
-    );
-  }, [watchedValues]);
+  const summary = useMemo(() => calculateFinalQuotation(
+    (deferredValues.woodBreakdown || []).map((r: any) => calculateWoodRow(r)),
+    (deferredValues.plyBreakdown || []).map((r: any) => calculatePlyRow(r as any)),
+    (deferredValues.foamBreakdown || []).map((r: any) => calculateFoamRow(r as any)),
+    (deferredValues.fabricBreakdown || []).map((r: any) => calculateFabricRow(r as any)),
+    deferredValues.labour || { carpenter: 0, polish: 0, foam: 0, total: 0 },
+    deferredValues.miscellaneous || { amount: 0, total: 0 },
+    deferredValues.factoryExpensePercent || 30,
+    deferredValues.markupPercent || 20,
+    deferredValues.gstPercent || 18,
+    deferredValues.includeGST === undefined ? true : deferredValues.includeGST
+  ), [deferredValues]);
 
   return (
-    <>
-      {/* Floating Toggle Button */}
-      <button 
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-10 right-10 w-20 h-20 bg-[#2d221c] text-white rounded-[2rem] shadow-2xl z-[100] border-t border-white/20 flex flex-col items-center justify-center gap-1 group overflow-hidden"
-      >
-        <div className="bg-grain absolute inset-0 opacity-10 pointer-events-none"></div>
-        <Calculator className={`w-8 h-8 transition-transform duration-500 ${isOpen ? 'rotate-90 scale-75' : 'group-hover:scale-110'}`} />
-        <span className="text-[8px] font-black uppercase tracking-widest">{isOpen ? 'Close' : 'View Hub'}</span>
-        {missingRates.length > 0 && <div className="absolute top-4 right-4 w-3 h-3 bg-rose-500 rounded-full border-2 border-[#2d221c] animate-pulse" />}
-      </button>
-
-      {/* Intelligence Pop-up Overlay */}
-      {isOpen && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsOpen(false)}></div>
-          
-          <div className="bg-[#2d221c] text-white w-full max-w-2xl rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] relative overflow-hidden border border-white/10 animate-in zoom-in-95 duration-500">
-            <div className="bg-grain absolute inset-0 opacity-[0.05] pointer-events-none"></div>
-            
-            <div className="p-10 md:p-14 relative z-10 space-y-10">
-               <div className="flex items-center justify-between border-b border-white/5 pb-8">
-                  <div className="flex items-center gap-4">
-                     <Activity className="w-6 h-6 text-amber-500" />
-                     <h3 className="text-3xl font-serif">Intelligence Hub</h3>
-                  </div>
-                  <div className="text-right">
-                     <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Client Audit</p>
-                     <p className="text-sm font-light text-white/50">{customerName || 'Pending Identification'}</p>
-                  </div>
-               </div>
-
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-center group">
-                       <span className="text-white/40 uppercase tracking-widest font-black text-[10px]">Material Cost</span>
-                       <span className="font-serif text-2xl font-light">₹{summary.totalMaterials.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center group">
-                       <span className="text-white/40 uppercase tracking-widest font-black text-[10px]">Craftsmanship</span>
-                       <span className="font-serif text-2xl font-light">₹{summary.totalLabour.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center group">
-                       <span className="text-white/40 uppercase tracking-widest font-black text-[10px]">Operations</span>
-                       <span className="font-serif text-2xl font-light">₹{summary.factoryExpenseAmount.toLocaleString()}</span>
-                    </div>
-                    <div className="pt-6 border-t border-white/5 flex justify-between items-end">
-                       <div className="space-y-1">
-                          <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Total Internal</p>
-                          <p className="text-4xl font-serif font-light">₹{summary.totalInternalCost.toLocaleString()}</p>
-                       </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-amber-500/10 p-10 rounded-[2.5rem] border border-amber-500/20 shadow-inner flex flex-col justify-center items-center text-center">
-                    <p className="text-[11px] font-black text-amber-500 uppercase tracking-widest mb-4">Market Valuation</p>
-                    <p className="text-6xl font-serif text-white tracking-tighter">₹{summary.grandTotal.toLocaleString()}</p>
-                    <div className="mt-8 flex gap-6 text-[10px] font-black uppercase tracking-widest">
-                       <span className="text-emerald-400">Margin: {summary.profitPercent}%</span>
-                       <span className="text-white/30">Tax: {watchedValues.gstPercent || 18}%</span>
-                    </div>
-                  </div>
-               </div>
-
-               <div className="bg-white/5 p-8 rounded-[2rem] border border-white/5">
-                  <div className="flex items-center justify-between mb-4">
-                     <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2">
-                        System Diagnostics {missingRates.length > 0 ? <AlertTriangle className="w-4 h-4 text-rose-500" /> : <ClipboardCheck className="w-4 h-4 text-emerald-500" />}
-                     </h4>
-                  </div>
-                  {missingRates.length === 0 ? (
-                     <p className="text-xs text-emerald-400 font-serif italic">"Audit complete. Data integrity verified for high-end production."</p>
-                  ) : (
-                     <p className="text-xs text-rose-400 font-serif italic">"Action Required: {missingRates.length} rate mismatches detected."</p>
-                  )}
-               </div>
-
-                <Button onClick={() => setIsOpen(false)} className="w-full h-16 bg-white text-[#2d221c] rounded-2xl font-serif text-xl hover:bg-amber-50 transition-colors">
-                  Return to Workshop
-               </Button>
+    <div className={`fixed left-0 right-0 z-[100] transition-all duration-500 bg-white border-t border-amber-900/10 ${isExpanded ? 'bottom-0 h-[380px]' : 'bottom-0 h-24'}`}>
+      <div className="max-w-7xl mx-auto px-4 md:px-8 h-full flex flex-col">
+        <div className="h-24 flex items-center justify-between">
+          <div className="flex gap-10">
+            <div><p className="text-[10px] uppercase opacity-40 font-black tracking-widest">Grand Total</p><p className="text-3xl font-serif font-medium">₹{(summary?.grandTotal || 0).toLocaleString()}</p></div>
+            <div className="hidden md:block">
+              <p className="text-[10px] uppercase opacity-40 font-black text-emerald-500 tracking-widest">Yield</p>
+              <p className="text-2xl font-serif">{summary.profitPercent}%</p>
             </div>
           </div>
+          <button type="button" onClick={() => setIsExpanded(!isExpanded)} className="px-6 py-3 bg-amber-100/50 rounded-xl text-xs font-black uppercase text-amber-900 flex items-center gap-2">Analysis Hub <ChevronUp className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} /></button>
         </div>
-      )}
-    </>
-   );
+        {isExpanded && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 py-10 border-t border-amber-900/5 animate-in slide-in-from-bottom-5">
+             <div className="space-y-4"><p className="text-[10px] font-black opacity-30 uppercase border-b pb-2 tracking-widest">Material Pool</p><div className="flex justify-between font-serif text-xl font-light"><span>Pool Value</span><span>₹{(summary?.totalMaterials || 0).toLocaleString()}</span></div><div className="flex justify-between text-[10px] opacity-50 uppercase font-black"><span>Wood Pool</span><span>₹{(summary?.totalWood || 0).toLocaleString()}</span></div><div className="flex justify-between text-[10px] opacity-50 uppercase font-black"><span>Board Pool</span><span>₹{(summary?.totalPly || 0).toLocaleString()}</span></div></div>
+              <div className="space-y-4">
+                 <p className="text-[10px] font-black opacity-30 uppercase border-b pb-2 tracking-widest">Operational Load</p>
+                 <div className="flex justify-between font-serif text-xl font-light"><span>Total Ops</span><span>₹{((summary?.totalLabour || 0) + (summary?.factoryExpenseAmount || 0)).toLocaleString()}</span></div>
+                 {(deferredValues?.includeGST !== false) && (
+                   <div className="flex justify-between text-[10px] opacity-50 uppercase font-black"><span>GST Component</span><span>₹{(summary?.gstAmount || 0).toLocaleString()}</span></div>
+                 )}
+              </div>
+             <div className="bg-[#2d221c] p-10 rounded-[30px] text-white flex flex-col justify-center shadow-2xl relative overflow-hidden"><div className="bg-grain absolute inset-0 opacity-[0.05] pointer-events-none"></div><p className="text-[10px] font-black text-amber-500 uppercase mb-3 tracking-[0.3em]">Factory Internal Cost</p><p className="text-5xl font-serif">₹{(summary?.totalInternalCost || 0).toLocaleString()}</p></div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

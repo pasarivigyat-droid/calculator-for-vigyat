@@ -125,9 +125,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        {/* Mobile bottom navigation bar */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#2d221c] border-t border-white/5 z-50 px-2 pb-safe">
-          <div className="flex justify-around items-center h-16 max-w-lg mx-auto overflow-x-auto no-scrollbar">
+        {/* Mobile bottom navigation bar - Premium Glassmorphism */}
+        <div className="md:hidden fixed bottom-4 left-4 right-4 bg-[#2d221c]/90 backdrop-blur-xl border border-white/10 z-50 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] px-2">
+          <div className="flex justify-around items-center h-20 max-w-lg mx-auto overflow-x-auto no-scrollbar">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
@@ -136,12 +136,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex flex-col items-center justify-center min-w-[64px] transition-all",
-                    isActive ? "text-amber-500" : "text-amber-100/50 hover:text-amber-200"
+                    "flex flex-col items-center justify-center min-w-[64px] transition-all relative",
+                    isActive ? "text-amber-500 scale-110" : "text-white/40 hover:text-white/70"
                   )}
                 >
-                  <Icon className={cn("w-5 h-5 mb-1", isActive ? "animate-pulse" : "")} />
-                  <span className="text-[10px] uppercase font-bold tracking-tighter">{item.name}</span>
+                  {isActive && (
+                    <div className="absolute -top-1 w-1 h-1 bg-amber-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.8)]" />
+                  )}
+                  <Icon className={cn("w-6 h-6 mb-1.5 transition-all duration-500", isActive ? "drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "")} />
+                  <span className="text-[7px] uppercase font-black tracking-[0.2em]">{item.name}</span>
                 </Link>
               );
             })}

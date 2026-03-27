@@ -18,11 +18,10 @@ export const normalizeNum = (n: any) => Number(n) || 0;
 export const calculateGunFoot = (
   length_ft: number,
   width_in: number,
-  thickness_in: number,
-  quantity: number
+  thickness_in: number
 ): number => {
-  if (!length_ft || !width_in || !thickness_in || !quantity) return 0;
-  return Number(((length_ft * width_in * thickness_in * quantity) / 144).toFixed(3));
+  if (!length_ft || !width_in || !thickness_in) return 0;
+  return Number(((length_ft * width_in * thickness_in) / 144).toFixed(3));
 };
 
 // ===================================================================
@@ -168,9 +167,12 @@ export const getFoamMatchReason = (row: Partial<FoamRow>, masters: FoamMaster[])
 // ===================================================================
 
 export const calculateWoodRow = (row: WoodRow): WoodRow => {
-  const gunFoot = calculateGunFoot(row.length_ft, row.width_in, row.thickness_in, row.quantity);
-  const totalCost = Number((gunFoot * (row.rate_per_gf || 0)).toFixed(2));
-  return { ...row, gun_foot: gunFoot, total_cost: totalCost };
+  const unitGF = calculateGunFoot(row.length_ft || 0, row.width_in || 0, row.thickness_in || 0);
+  const baseGF = unitGF * (row.quantity || 1);
+  const wastageAmount = (baseGF * (row.wastage_percent || 7.5)) / 100;
+  const totalGF = Number((baseGF + wastageAmount).toFixed(3));
+  const totalCost = Number((totalGF * (row.rate_per_gf || 0)).toFixed(2));
+  return { ...row, gun_foot: totalGF, total_cost: totalCost };
 };
 
 export const calculatePlyRow = (row: PlyRow): PlyRow => {
@@ -240,7 +242,8 @@ export const calculateFinalQuotation = (
   misc: { amount: number },
   factoryExpensePercent: number,
   markupPercent: number,
-  gstPercent: number = 0
+  gstPercent: number = 0,
+  includeGST: boolean = true
 ): QuoteSummary => {
   const totalWood = woodRows.reduce((sum, r) => sum + r.total_cost, 0);
   const totalPly = plyRows.reduce((sum, r) => sum + r.total_cost, 0);
@@ -265,7 +268,7 @@ export const calculateFinalQuotation = (
   const markupAmount = Number(((totalInternalCost * markupPercent) / 100).toFixed(2));
   const baseAmount = Number((totalInternalCost + markupAmount).toFixed(2)); // Selling Price before tax
   
-  const gstAmount = Number(((baseAmount * gstPercent) / 100).toFixed(2));
+  const gstAmount = includeGST ? Number(((baseAmount * gstPercent) / 100).toFixed(2)) : 0;
   const grandTotal = Number((baseAmount + gstAmount).toFixed(2));
 
   const finalSellingPrice = baseAmount; // For backward compatibility in logic that expects FSP = base
@@ -290,6 +293,7 @@ export const calculateFinalQuotation = (
     profitPercent,
     baseAmount,
     gstAmount,
+    includeGST,
     grandTotal
   };
 };

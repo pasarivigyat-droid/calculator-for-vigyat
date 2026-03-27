@@ -11,7 +11,7 @@ export type MasterCategory = 'wood' | 'ply' | 'foam' | 'hardware' | 'markups' | 
 
 export type QuoteStatus = 'Draft' | 'Sent' | 'Approved' | 'Rejected' | 'Closed';
 
-export type CustomerType = 'Architect' | 'Interior Designer' | 'House Owner' | 'Showroom' | 'Third-party Supplier' | 'Furniture Manufacturer' | 'Real Estate Developer' | 'Hospitality Group' | 'Retail Client' | 'Other';
+export type CustomerType = 'Architect' | 'Interior Designer' | 'House Owner' | 'Distributor' | 'Third-party Seller' | 'Furniture Showroom' | 'Other';
 
 // ===================================================================
 // QUOTE ROW TYPES
@@ -101,6 +101,7 @@ export interface QuoteSummary {
   profitPercent: number;
   baseAmount: number; // For GST calculation
   gstAmount: number;
+  includeGST: boolean; 
   grandTotal: number;
 }
 
@@ -123,6 +124,7 @@ export interface Quotation {
   
   status: QuoteStatus;
   gstPercent: number;
+  includeGST: boolean; 
   factoryExpensePercent: number;
   markupPercent: number;
   isArchived: boolean;
