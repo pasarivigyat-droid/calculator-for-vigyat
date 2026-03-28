@@ -1,7 +1,7 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getAuth, Auth } from "firebase/auth";
+import { getFirestore, Firestore } from "firebase/firestore";
+import { getStorage, FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,18 +12,40 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// --- Hardened Initialization for Next.js Prerendering ---
+// We only initialize Firebase if:
+// 1. We are in the browser (client-side)
+// 2. We have a valid API key (for server-side code that actually needs Firebase)
+const shouldInitialize = typeof window !== "undefined" || !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
-// Use Database ID from environment or fallback to (default) if not set
-const databaseId = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "(default)";
-const db = getFirestore(app, databaseId);
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+let storage: FirebaseStorage;
 
-const storage = getStorage(app);
-
-if (process.env.NODE_ENV !== 'production') {
-  console.log(`[FirebaseConfig] Initialized with Database ID: ${databaseId}`);
+if (shouldInitialize) {
+  try {
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    
+    const databaseId = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "(default)";
+    db = getFirestore(app, databaseId);
+    storage = getStorage(app);
+    
+    if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
+      console.log(`[Firebase] Initialized on client with Database ID: ${databaseId}`);
+    }
+  } catch (error) {
+    console.error("Firebase initialization error:", error);
+    // During build, we don't want to crash the process if possible
+  }
+} else {
+  // During build if config is missing, we export null/proxy objects to prevent import-time crashes
+  // These will never be used since Firebase operations are client-only in this app
+  app = (null as unknown) as FirebaseApp;
+  auth = (null as unknown) as Auth;
+  db = (null as unknown) as Firestore;
+  storage = (null as unknown) as FirebaseStorage;
 }
 
 export { app, auth, db, storage };

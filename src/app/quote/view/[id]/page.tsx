@@ -246,7 +246,9 @@ export default function QuotationTemplatePage() {
                     <h3 className="text-[11px] font-black text-amber-700 uppercase tracking-[0.4em] mb-10 border-b-2 border-amber-100 pb-2">FOUNDER AUTHORIZATION</h3>
                     <div className="space-y-10">
                        <div className="flex items-center gap-5">
-                          <div className="w-8 h-8 rounded-lg border-2 border-black"></div>
+                          <div className="w-8 h-8 rounded-lg border-2 border-black flex items-center justify-center">
+                            <div className="w-4 h-4 bg-black rounded-sm"></div>
+                          </div>
                           <span className="text-base font-black text-black">APPROVE — Release to Workshop</span>
                        </div>
                        <div className="flex items-center gap-5">
@@ -260,18 +262,26 @@ export default function QuotationTemplatePage() {
                     </div>
                   </div>
 
-                  <div className="pt-10 border-t-2 border-gray-200 mt-10 space-y-10">
+                  <div className="pt-10 border-t-2 border-gray-200 mt-10 space-y-8">
                      <div className="space-y-4">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Decision Notes:</p>
-                        <div className="h-28 border-b-2 border-gray-100"></div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Decision Notes:</p>
+                        <div className="h-20 border-b border-dashed border-gray-300"></div>
                      </div>
+                     
                      <div className="grid grid-cols-2 gap-8 pt-4">
-                        <div className="space-y-2 border-t-4 border-black pt-2">
-                           <p className="text-[9px] font-black uppercase">Founder Signature</p>
+                        <div className="space-y-1 border-t-4 border-black pt-3">
+                           <p className="text-3xl font-serif italic text-black leading-none mb-1">Amit Bhayani</p>
+                           <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Founder Signature</p>
                         </div>
-                        <div className="space-y-2 border-t-4 border-gray-100 pt-2 text-right">
-                           <p className="text-[9px] font-black uppercase text-gray-400">Decision Date</p>
+                        <div className="space-y-1 border-t-4 border-black pt-3">
+                           <div className="h-8"></div>
+                           <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Authorized Signature</p>
                         </div>
+                     </div>
+
+                     <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                        <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.3em]">Decision Date</p>
+                        <p className="text-sm font-bold text-black">{new Date(quote.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                      </div>
                   </div>
                </div>
@@ -466,6 +476,18 @@ export default function QuotationTemplatePage() {
                   
                   <div className="flex justify-between text-[11px] font-black text-emerald-700 uppercase pt-4 border-t border-gray-200"><span>Target Decision Profit</span><span>{formatCurrency((quote.summary?.baseAmount || 0) - (quote.summary?.totalInternalCost || 0))}</span></div>
                   <div className="flex justify-between text-4xl font-serif text-black pt-6 border-t-4 border-black font-black"><span>FINAL DECISION PRICE</span><span>{formatCurrency(quote.summary?.baseAmount)}</span></div>
+               </div>
+            </div>
+
+            {/* Footer Audit Signatures (Page 2) */}
+            <div className="mt-12 grid grid-cols-2 gap-12 pt-10 border-t-2 border-gray-100 italic">
+               <div className="space-y-1">
+                  <p className="text-xl font-serif text-black leading-none mb-1">Amit Bhayani</p>
+                  <p className="text-[9px] font-black uppercase text-gray-400">Founder Authorization Audit</p>
+               </div>
+               <div className="space-y-1 text-right">
+                  <div className="h-6"></div>
+                  <p className="text-[9px] font-black uppercase text-gray-400">Authorized Master Audit Signature</p>
                </div>
             </div>
           </div>
