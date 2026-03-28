@@ -285,6 +285,7 @@ export default function NewQuotePage() {
                   <div className="space-y-4">
                     {plyFields.map((field, index) => {
                       const row = watchedPly?.[index] as any;
+                      const hasRateMatch = !!findPlyMaster(row?.plyCategory, row?.thickness_mm || 0, plyMasters);
                       return (
                         <div key={field.id} className="p-4 rounded-[20px] bg-blue-50/10 border border-blue-900/5"><div className="grid grid-cols-2 lg:grid-cols-12 gap-4 items-end">
                            <div className="col-pan-2 lg:col-span-3"><Input label="Allocation" {...register(`plyBreakdown.${index}.componentName`)} /></div>
