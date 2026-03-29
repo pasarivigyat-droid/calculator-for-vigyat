@@ -480,7 +480,7 @@ export default function ProductDetailPage() {
              <div className="space-y-6">
                 <div>
                   <Select 
-                    label="Customer Category" 
+                    label="Select Customer Type" 
                     options={markupSettings.map(s => ({ label: s.customer_type, value: s.customer_type }))}
                     value={selectedCustomerType}
                     onChange={(e) => setSelectedCustomerType(e.target.value as CustomerType)}

@@ -29,7 +29,6 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
-import { Quotation, WoodMaster, PlyMaster, FoamMaster, WoodRow, PlyRow, FoamRow, CustomerType, FabricRow, FabricMaster } from "@/types";
 import { 
   getWoodMasters, 
   getPlyMasters, 
@@ -37,8 +36,10 @@ import {
   createQuotation,
   createProductLibraryItem,
   checkSkuExists,
-  getProductCountByCategory
+  getProductCountByCategory,
+  getMarkupSettings
 } from "@/lib/firebase/services";
+import { Quotation, WoodMaster, PlyMaster, FoamMaster, WoodRow, PlyRow, FoamRow, CustomerType, FabricRow, FabricMaster, CustomerMarkupSetting } from "@/types";
 import { Modal } from "@/components/ui/Modal";
 import { useRouter } from "next/navigation";
 import { generateRefCode } from "@/lib/utils/formatters";
@@ -79,6 +80,7 @@ export default function NewQuotePage() {
   const [woodMasters, setWoodMasters] = useState<WoodMaster[]>([]);
   const [plyMasters, setPlyMasters] = useState<PlyMaster[]>([]);
   const [foamMasters, setFoamMasters] = useState<FoamMaster[]>([]);
+  const [markupSettings, setMarkupSettings] = useState<CustomerMarkupSetting[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
   const [libraryData, setLibraryData] = useState({
@@ -121,6 +123,16 @@ export default function NewQuotePage() {
   const watchedPly = useWatch({ control, name: "plyBreakdown" });
   const watchedFoam = useWatch({ control, name: "foamBreakdown" });
   const watchedCategory = watch("productCategory");
+  const watchedCustomerType = watch("customerType");
+
+  useEffect(() => {
+    if (watchedCustomerType && markupSettings.length > 0) {
+      const setting = markupSettings.find(m => m.customer_type === watchedCustomerType);
+      if (setting) {
+        setValue("markupPercent", setting.default_markup_percent);
+      }
+    }
+  }, [watchedCustomerType, markupSettings, setValue]);
 
   useEffect(() => {
     if (watchedCategory) setValue("productName", watchedCategory);
@@ -128,8 +140,16 @@ export default function NewQuotePage() {
 
   useEffect(() => {
     const loadMasters = async () => {
-      const [w, p, f] = await Promise.all([getWoodMasters(), getPlyMasters(), getFoamMasters()]);
-      setWoodMasters(w); setPlyMasters(p); setFoamMasters(f);
+      const [w, p, f, m] = await Promise.all([
+        getWoodMasters(), 
+        getPlyMasters(), 
+        getFoamMasters(),
+        getMarkupSettings()
+      ]);
+      setWoodMasters(w); 
+      setPlyMasters(p); 
+      setFoamMasters(f);
+      setMarkupSettings(m);
     };
     loadMasters();
   }, []);
@@ -314,8 +334,7 @@ export default function NewQuotePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <div className="space-y-8">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <Select label="Category" options={PRODUCT_CATEGORIES.map(c => ({ label: c, value: c }))} {...register("productCategory")} />
-                        <Select label="Type of Client" options={CLIENT_TYPES.map(t => ({ label: t, value: t }))} {...register("customerType")} />
+                        <Select label="Category Type" options={PRODUCT_CATEGORIES.map(c => ({ label: c, value: c }))} {...register("productCategory")} />
                       </div>
                       <div className="flex items-center gap-4 p-4 bg-amber-50/50 rounded-2xl border border-amber-900/5">
                         <Calendar className="w-5 h-5 text-amber-700 opacity-50" /><Input label="Valuation Date" type="date" {...register("date")} className="bg-transparent border-none p-0 h-auto w-full" />
@@ -456,6 +475,11 @@ export default function NewQuotePage() {
                        <Input label="Miscellaneous Fittings" type="number" {...register("miscellaneous.amount", { valueAsNumber: true })} />
                     </div>
                      <div className="space-y-6 bg-amber-50/20 p-8 rounded-3xl border border-amber-900/5">
+                        <Select 
+                          label="Type of Client" 
+                          options={CLIENT_TYPES.map(t => ({ label: t, value: t }))} 
+                          {...register("customerType")} 
+                        />
                         <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-amber-900/5 shadow-sm">
                            <div>
                               <p className="text-xs font-black uppercase tracking-widest text-[#2d221c]">Apply GST Tax</p>
