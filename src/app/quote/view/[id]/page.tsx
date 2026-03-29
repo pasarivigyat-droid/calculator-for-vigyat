@@ -285,6 +285,12 @@ export default function QuotationTemplatePage() {
                      </div>
                   </div>
                </div>
+               
+               {/* Metadata Credit */}
+               <div className="mt-8 text-[9px] font-black text-gray-300 uppercase tracking-[0.4em] flex justify-between items-center px-4">
+                  <span>Architecture by Woodflex Team</span>
+                  <span className="text-gray-400">Made by Vigyat Pansari</span>
+               </div>
             </div>
 
             {/* Right Col: The BIG Metrics & Cost Snapshot */}
@@ -482,13 +488,19 @@ export default function QuotationTemplatePage() {
             {/* Footer Audit Signatures (Page 2) */}
             <div className="mt-12 grid grid-cols-2 gap-12 pt-10 border-t-2 border-gray-100 italic">
                <div className="space-y-1">
-                  <p className="text-xl font-serif text-black leading-none mb-1">Amit Bhayani</p>
+                  <p className="text-xl font-serif italic text-black leading-none mb-1">Amit Bhayani</p>
                   <p className="text-[9px] font-black uppercase text-gray-400">Founder Authorization Audit</p>
                </div>
                <div className="space-y-1 text-right">
-                  <div className="h-6"></div>
+                  <div className="h-8"></div>
                   <p className="text-[9px] font-black uppercase text-gray-400">Authorized Master Audit Signature</p>
                </div>
+            </div>
+
+            {/* Final Document Credit */}
+            <div className="mt-8 flex justify-between items-center border-t border-gray-100 pt-6 px-4">
+               <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Calculated by Woodflex Intelligence v4.0</p>
+               <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Made by Vigyat Pansari</p>
             </div>
           </div>
         </div>
