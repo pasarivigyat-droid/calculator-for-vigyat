@@ -49,7 +49,16 @@ if (shouldInitialize) {
 } else {
   if (isBrowser && !hasConfig) {
       console.warn("⚠️ [Firebase] Initialization SKIPPED: NEXT_PUBLIC_FIREBASE_API_KEY is missing.");
-      console.warn("Application will run in limited mode without cloud synchronization.");
+      console.warn("This usually means environment variables are not correctly set in your .env.local file or on your hosting provider (like Netlify).");
+      
+      const missingKeys = [];
+      if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) missingKeys.push("API_KEY");
+      if (!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN) missingKeys.push("AUTH_DOMAIN");
+      if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) missingKeys.push("PROJECT_ID");
+      
+      if (missingKeys.length > 0) {
+        console.warn(`🔥 Missing Required Keys: ${missingKeys.join(", ")}`);
+      }
   }
 }
 
