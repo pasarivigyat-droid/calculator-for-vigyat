@@ -155,7 +155,7 @@ export interface Quotation {
   productName?: string;
   productCategory: string;
   productImage?: string;
-  customerName: string;
+  customerName?: string;
   customerType: CustomerType;
   date: string;
   notes?: string;

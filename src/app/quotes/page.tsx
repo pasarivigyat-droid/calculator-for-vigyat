@@ -95,7 +95,7 @@ export default function QuotesLibraryPage() {
 
   const filteredQuotes = quotes.filter(q => 
     (q.productName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    q.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (q.customerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (q.tags?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
@@ -222,7 +222,7 @@ export default function QuotesLibraryPage() {
                     <div className="space-y-1">
                       <h4 className="text-2xl font-serif text-[#2d221c] leading-tight group-hover:text-amber-800 transition-colors uppercase tracking-tight">{quote.productName || 'Unnamed Unit'}</h4>
                       <p className="text-[10px] text-amber-900/40 font-black uppercase tracking-widest flex items-center gap-2">
-                        <User className="w-3 h-3" /> {quote.customerName}
+                        <Calendar className="w-3 h-3" /> {new Date(quote.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                       </p>
                     </div>
                     <div className="text-right">
@@ -237,7 +237,7 @@ export default function QuotesLibraryPage() {
                   
                   <div className="flex items-center justify-between pt-6 border-t border-amber-900/5">
                     <span className="text-[9px] text-amber-900/20 uppercase font-black tracking-widest flex items-center gap-2">
-                       <Calendar className="w-3 h-3" /> {new Date(quote.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                       {quote.refCode}
                     </span>
                     <div className="flex gap-2">
                        <button 
@@ -278,7 +278,7 @@ export default function QuotesLibraryPage() {
                    <div>
                       <h4 className="text-xl font-serif text-[#2d221c] tracking-tight uppercase">{quote.productName || 'Unnamed Unit'}</h4>
                       <div className="flex items-center gap-4 mt-1.5">
-                         <span className="text-[9px] font-black text-amber-900/40 uppercase tracking-widest flex items-center gap-1.5"><User className="w-3 h-3 opacity-50" /> {quote.customerName}</span>
+                         <span className="text-[9px] font-black text-amber-900/40 uppercase tracking-widest flex items-center gap-1.5">{quote.refCode}</span>
                          <span className="w-1 h-1 rounded-full bg-amber-900/20"></span>
                          <span className="text-[9px] font-black text-amber-700 uppercase tracking-widest">{quote.productCategory}</span>
                          <span className={`text-[8px] font-black px-2.5 py-1 rounded-full border ${

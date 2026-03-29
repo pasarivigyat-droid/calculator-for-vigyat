@@ -313,7 +313,6 @@ export default function NewQuotePage() {
                   <div className="flex items-center gap-4 mb-10"><User className="text-amber-700 w-6 h-6" /><h2 className="text-2xl font-serif text-[#2d221c]">Project Identity</h2></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <div className="space-y-8">
-                      <Input label="Customer Name" placeholder="e.g. John Doe" {...register("customerName", { required: true })} />
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <Select label="Category" options={PRODUCT_CATEGORIES.map(c => ({ label: c, value: c }))} {...register("productCategory")} />
                         <Select label="Type of Client" options={CLIENT_TYPES.map(t => ({ label: t, value: t }))} {...register("customerType")} />

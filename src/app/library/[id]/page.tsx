@@ -132,7 +132,6 @@ export default function ProductDetailPage() {
         productName: product.name,
         productCategory: product.category,
         productImage: product.image,
-        customerName: `Draft (${product.name})`,
         customerType: selectedCustomerType,
         date: new Date().toISOString().split('T')[0],
         notes: `Created from Product Library SKU: ${product.sku}`,
