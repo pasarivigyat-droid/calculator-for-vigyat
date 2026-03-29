@@ -22,13 +22,24 @@ import {
   Calendar,
   X,
   Camera,
-  Activity
+  Activity,
+  BookOpen,
+  Tag as TagIcon
 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { Quotation, WoodMaster, PlyMaster, FoamMaster, WoodRow, PlyRow, FoamRow, CustomerType, FabricRow, FabricMaster } from "@/types";
-import { getWoodMasters, getPlyMasters, getFoamMasters, createQuotation } from "@/lib/firebase/services";
+import { 
+  getWoodMasters, 
+  getPlyMasters, 
+  getFoamMasters, 
+  createQuotation,
+  createProductLibraryItem,
+  checkSkuExists,
+  getProductCountByCategory
+} from "@/lib/firebase/services";
+import { Modal } from "@/components/ui/Modal";
 import { useRouter } from "next/navigation";
 import { generateRefCode } from "@/lib/utils/formatters";
 import { compressImage } from "@/lib/utils/image_compression";
@@ -52,7 +63,7 @@ const PRODUCT_CATEGORIES = [
 ];
 
 const CLIENT_TYPES: CustomerType[] = [
-  'Architect', 'Interior Designer', 'House Owner', 'Distributor', 'Third-party Seller', 'Furniture Showroom', 'Other'
+  'Architect', 'Interior Designer', 'House Owner', 'Showroom', 'Third Party'
 ];
 
 const STEPS = [
@@ -69,6 +80,15 @@ export default function NewQuotePage() {
   const [plyMasters, setPlyMasters] = useState<PlyMaster[]>([]);
   const [foamMasters, setFoamMasters] = useState<FoamMaster[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
+  const [libraryData, setLibraryData] = useState({
+    sku: '',
+    name: '',
+    category: '',
+    description: '',
+    tags: ''
+  });
+  const [isLibrarySaving, setIsLibrarySaving] = useState(false);
   const router = useRouter();
 
   const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm<Quotation>({
@@ -175,10 +195,60 @@ export default function NewQuotePage() {
   const plyCategories = useMemo(() => Array.from(new Set(plyMasters.map(m => m.ply_category))).sort(), [plyMasters]);
   const foamTypes = useMemo(() => Array.from(new Set(foamMasters.map(m => m.foam_type))).sort(), [foamMasters]);
   const getFoamSpecs = (type: string) => foamMasters.filter(m => m.foam_type === type).map(m => m.specification).sort();
-
   const onSubmit = async (data: Quotation) => {
     setIsSubmitting(true);
     try {
+      const summary = calculateFinalQuotation(
+        data.woodBreakdown.map((r: WoodRow) => calculateWoodRow(r)),
+        data.plyBreakdown.map((r: PlyRow) => calculatePlyRow(r as any)),
+        data.foamBreakdown.map((r: FoamRow) => calculateFoamRow(r as any)),
+        data.fabricBreakdown.map((r: FabricRow) => calculateFabricRow(r as any)),
+        data.labour, { amount: data.miscellaneous.amount },
+        data.factoryExpensePercent, data.markupPercent, data.gstPercent,
+        data.includeGST === undefined ? true : data.includeGST
+      );
+      const { id, createdAt, updatedAt, ...quoteData } = data;
+      await createQuotation({ ...quoteData, refCode: generateRefCode(), summary, status: data.status || 'Draft', createdBy: 'admin' });
+      router.push('/quotes');
+    } catch (err) { alert("Error saving valuation."); } finally { setIsSubmitting(false); }
+  };
+
+  const openLibraryModal = async () => {
+    const currentName = watch("productName") || watch("productCategory");
+    const currentCategory = watch("productCategory");
+    
+    // Auto-suggest SKU
+    const count = await getProductCountByCategory(currentCategory);
+    const suggestedSku = `${currentCategory.substring(0, 3).toUpperCase()}-${(count + 1).toString().padStart(3, '0')}`;
+    
+    setLibraryData({
+      sku: suggestedSku,
+      name: currentName,
+      category: currentCategory,
+      description: '',
+      tags: ''
+    });
+    setIsLibraryModalOpen(true);
+  };
+
+  const onSaveToLibrary = async () => {
+    if (!libraryData.sku || !libraryData.name) {
+      alert("SKU and Name are required");
+      return;
+    }
+
+    setIsLibrarySaving(true);
+    try {
+      const exists = await checkSkuExists(libraryData.sku);
+      if (exists) {
+        if (!confirm("SKU already exists. Do you want to continue with a duplicate SKU? (Not recommended)")) {
+          setIsLibrarySaving(false);
+          return;
+        }
+      }
+
+      const data = watch();
+      // Calculate latest state for snapshot
       const summary = calculateFinalQuotation(
         data.woodBreakdown.map(r => calculateWoodRow(r)),
         data.plyBreakdown.map(r => calculatePlyRow(r as any)),
@@ -188,10 +258,36 @@ export default function NewQuotePage() {
         data.factoryExpensePercent, data.markupPercent, data.gstPercent,
         data.includeGST === undefined ? true : data.includeGST
       );
-      const { id, createdAt, updatedAt, ...quoteData } = data;
-      await createQuotation({ ...quoteData, refCode: generateRefCode(), summary, status: data.status || 'Draft', createdBy: 'admin' });
-      router.push('/quotes');
-    } catch (err) { alert("Error saving valuation."); } finally { setIsSubmitting(false); }
+
+      await createProductLibraryItem({
+        sku: libraryData.sku,
+        name: libraryData.name,
+        category: libraryData.category,
+        image: data.productImage,
+        description: libraryData.description,
+        tags: libraryData.tags.split(',').map((t: string) => t.trim()).filter(Boolean),
+        woodBreakdown: data.woodBreakdown.map((r: WoodRow) => calculateWoodRow(r)),
+        plyBreakdown: data.plyBreakdown.map((r: PlyRow) => calculatePlyRow(r as any)),
+        foamBreakdown: data.foamBreakdown.map((r: FoamRow) => calculateFoamRow(r as any)),
+        fabricBreakdown: data.fabricBreakdown.map((r: FabricRow) => calculateFabricRow(r as any)),
+        labour: data.labour,
+        miscellaneous: { amount: data.miscellaneous.amount, total: (Number(data.miscellaneous.amount) || 0) },
+        factoryExpensePercent: data.factoryExpensePercent,
+        totalInternalCost: summary.totalInternalCost,
+        totalMaterials: summary.totalMaterials,
+        totalLabour: summary.totalLabour,
+        totalWastageAmount: summary.totalWastageAmount,
+        createdBy: 'admin'
+      });
+
+      alert("Product saved to library successfully!");
+      setIsLibraryModalOpen(false);
+    } catch (err: any) {
+      console.error(err);
+      alert("Error saving to library: " + err.message);
+    } finally {
+      setIsLibrarySaving(false);
+    }
   };
 
   return (
@@ -375,14 +471,77 @@ export default function NewQuotePage() {
                   </div>
                </div>
                <div className="flex justify-between items-center">
-                  <Button type="button" onClick={() => setStep(3)} variant="ghost" className="h-16 px-10">Back</Button>
-                  <Button type="submit" disabled={isSubmitting} className="h-20 px-20 bg-black text-white rounded-3xl text-2xl font-serif shadow-2xl hover:scale-105 transition-all">
-                    {isSubmitting ? 'Syncing...' : 'Finalize Valuation'}
-                  </Button>
+                   <Button type="button" onClick={() => setStep(3)} variant="ghost" className="h-16 px-10">Back</Button>
+                  <div className="flex gap-4">
+                    <Button 
+                      type="button" 
+                      onClick={openLibraryModal} 
+                      variant="outline"
+                      className="h-20 px-10 rounded-3xl border-2 border-amber-900/10 text-[#2d221c] text-lg font-serif"
+                    >
+                      <BookOpen className="w-5 h-5 mr-3" />
+                      Save to Library
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting} className="h-20 px-16 bg-[#2d221c] text-white rounded-3xl text-xl font-serif shadow-2xl hover:scale-105 transition-all">
+                      {isSubmitting ? 'Syncing...' : 'Finalize Valuation'}
+                    </Button>
+                  </div>
                </div>
             </div>
           )}
         </form>
+
+        <Modal
+          isOpen={isLibraryModalOpen}
+          onClose={() => setIsLibraryModalOpen(false)}
+          title="Save as Reusable Product"
+          footer={
+            <div className="flex gap-3">
+              <Button variant="ghost" onClick={() => setIsLibraryModalOpen(false)}>Cancel</Button>
+              <Button onClick={onSaveToLibrary} disabled={isLibrarySaving}>
+                {isLibrarySaving ? 'Saving...' : 'Add to SKUs'}
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <Input 
+                label="SKU Code" 
+                placeholder="e.g. CH-001" 
+                value={libraryData.sku} 
+                onChange={e => setLibraryData({...libraryData, sku: e.target.value.toUpperCase()})}
+              />
+              <Input 
+                label="Product Name" 
+                placeholder="e.g. Wingback Chair" 
+                value={libraryData.name} 
+                onChange={e => setLibraryData({...libraryData, name: e.target.value})}
+              />
+            </div>
+            <Select 
+              label="Library Category" 
+              options={PRODUCT_CATEGORIES.map(c => ({ label: c, value: c }))}
+              value={libraryData.category}
+              onChange={e => setLibraryData({...libraryData, category: e.target.value})}
+            />
+            <Input 
+              label="Internal Tags (comma separated)" 
+              placeholder="e.g. Premium, Leather, Office" 
+              value={libraryData.tags} 
+              onChange={e => setLibraryData({...libraryData, tags: e.target.value})}
+            />
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest block ml-1">Internal Description</label>
+              <textarea 
+                className="w-full min-h-[100px] p-4 rounded-2xl border border-amber-900/10 bg-amber-50/20 focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-sm"
+                placeholder="Add internal notes about this SKU..."
+                value={libraryData.description}
+                onChange={e => setLibraryData({...libraryData, description: e.target.value})}
+              />
+            </div>
+          </div>
+        </Modal>
 
         <LiveValuationBar control={control} />
       </div>

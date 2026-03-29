@@ -28,7 +28,7 @@ const navItems = [
   { name: "New Quote", href: "/quote/new", icon: FilePlus },
   { name: "Quotations", href: "/quotes", icon: ClipboardList },
   { name: "Masters", href: "/masters", icon: Settings },
-  { name: "Library", href: "/references", icon: Library },
+  { name: "Library", href: "/library", icon: Library },
 ];
 
 export default function Shell({ children }: { children: React.ReactNode }) {

@@ -11,7 +11,51 @@ export type MasterCategory = 'wood' | 'ply' | 'foam' | 'hardware' | 'markups' | 
 
 export type QuoteStatus = 'Draft' | 'Sent' | 'Approved' | 'Rejected' | 'Closed';
 
-export type CustomerType = 'Architect' | 'Interior Designer' | 'House Owner' | 'Distributor' | 'Third-party Seller' | 'Furniture Showroom' | 'Other';
+export type CustomerType = 'Architect' | 'Interior Designer' | 'House Owner' | 'Showroom' | 'Third Party';
+
+// ===================================================================
+// PRODUCT LIBRARY / SKU
+// ===================================================================
+
+export interface ProductLibraryItem {
+  id?: string;
+  sku: string;
+  name: string;
+  category: string;
+  image?: string;
+  description?: string;
+  tags?: string[];
+  
+  // Costing Snapshot (Static values at time of saving)
+  woodBreakdown: WoodRow[];
+  plyBreakdown: PlyRow[];
+  foamBreakdown: FoamRow[];
+  fabricBreakdown: FabricRow[];
+  
+  labour: {
+    carpenter: number;
+    polish: number;
+    foam: number;
+    total: number;
+  };
+  
+  miscellaneous: {
+    amount: number;
+    total: number;
+  };
+  
+  factoryExpensePercent: number;
+  
+  // Totals at time of snapshot
+  totalInternalCost: number;
+  totalMaterials: number;
+  totalLabour: number;
+  totalWastageAmount: number;
+  
+  createdAt: any;
+  updatedAt: any;
+  createdBy: string;
+}
 
 // ===================================================================
 // QUOTE ROW TYPES

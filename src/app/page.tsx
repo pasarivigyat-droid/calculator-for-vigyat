@@ -26,7 +26,8 @@ import {
   Image as ImageIcon,
   Sparkles,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -197,6 +198,7 @@ export default function DashboardPage() {
            <div className="grid grid-cols-1 gap-4">
               {[
                 { title: 'Material Library', icon: LayoutGrid, link: '/masters' },
+                { title: 'Product Library', icon: BookOpen, link: '/library' },
                 { title: 'Valuation Archive', icon: Clock, link: '/quotes' }
               ].map((item, i) => (
                 <Link key={i} href={item.link}>

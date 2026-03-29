@@ -21,7 +21,8 @@ import {
   FoamMaster, 
   FabricMaster,
   CustomerMarkupSetting,
-  CustomerType
+  CustomerType,
+  ProductLibraryItem
 } from "@/types";
 
 // --- QUOTATIONS ---
@@ -270,4 +271,55 @@ export const saveMarkupSetting = async (setting: CustomerMarkupSetting) => {
   } else {
     await addDoc(collection(db, COLLECTIONS.markups), setting);
   }
+};
+
+// --- PRODUCT LIBRARY ---
+
+export const createProductLibraryItem = async (item: Omit<ProductLibraryItem, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const docRef = await addDoc(collection(db, "product_library"), {
+    ...item,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return docRef.id;
+};
+
+export const updateProductLibraryItem = async (id: string, item: Partial<ProductLibraryItem>) => {
+  const docRef = doc(db, "product_library", id);
+  await updateDoc(docRef, {
+    ...item,
+    updatedAt: serverTimestamp(),
+  });
+};
+
+export const getProductLibraryItem = async (id: string): Promise<ProductLibraryItem | null> => {
+  const docRef = doc(db, "product_library", id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return { id: docSnap.id, ...docSnap.data() } as ProductLibraryItem;
+  }
+  return null;
+};
+
+export const getProductLibraryItems = async (): Promise<ProductLibraryItem[]> => {
+  const q = query(collection(db, "product_library"), orderBy("updatedAt", "desc"));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductLibraryItem));
+};
+
+export const deleteProductLibraryItem = async (id: string) => {
+  const docRef = doc(db, "product_library", id);
+  await deleteDoc(docRef);
+};
+
+export const checkSkuExists = async (sku: string): Promise<boolean> => {
+  const q = query(collection(db, "product_library"), where("sku", "==", sku));
+  const snap = await getDocs(q);
+  return !snap.empty;
+};
+
+export const getProductCountByCategory = async (category: string): Promise<number> => {
+  const q = query(collection(db, "product_library"), where("category", "==", category));
+  const snap = await getDocs(q);
+  return snap.size;
 };
