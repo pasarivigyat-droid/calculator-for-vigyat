@@ -206,8 +206,7 @@ export const calculatePlyRow = (row: PlyRow): PlyRow => {
  * ─────────────────────────────────────────────────────────────────────
  */
 export const calculateFoamRow = (row: FoamRow): FoamRow => {
-  const adjustedSheetValue = (row.master_rate || 0) * (row.thickness_in || 0);
-  const derivedRatePerSqft = adjustedSheetValue > 0 ? adjustedSheetValue / 18 : 0;
+  const derivedRatePerSqft = (row.master_rate || 0) * (row.thickness_mm || 0);
   const requiredSqft = Number(((row.cut_length_in * row.cut_width_in * row.quantity) / 144).toFixed(3));
   const materialCost = requiredSqft * derivedRatePerSqft;
   const wastageAmount = row.wastage_percent > 0 ? (materialCost * row.wastage_percent) / 100 : (row.wastage_amount || 0);

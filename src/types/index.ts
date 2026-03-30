@@ -99,13 +99,13 @@ export interface FoamRow {
   componentName: string;
   foamType: string;
   specification: string;
-  thickness_in: number;
+  thickness_mm: number;
   cut_length_in: number;
   cut_width_in: number;
   quantity: number;
   sqft: number;
   master_rate: number;       // base rate from foam master
-  rate_per_sqft: number;     // derived: (master_rate × thickness) / 18
+  rate_per_sqft: number;     // derived: master_rate × thickness(mm)
   wastage_percent: number;
   wastage_amount: number;
   isRateOverridden: boolean;

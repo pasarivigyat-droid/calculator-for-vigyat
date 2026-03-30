@@ -431,16 +431,17 @@ export default function NewQuotePage() {
           {step === 3 && (
             <div className="space-y-10 animate-in fade-in duration-500">
                <div className="bg-white p-6 md:p-10 rounded-[30px] shadow-wood border border-amber-900/5">
-                  <div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-serif flex items-center gap-4"><Wind className="text-orange-700" /> Foam & Cushioning</h2><Button type="button" onClick={() => appendFoam({ id: Date.now().toString(), componentName: '', foamType: (foamTypes[0] || 'PU'), specification: '32D', thickness_in: 0, cut_length_in: 0, cut_width_in: 0, quantity: 1, sqft: 0, master_rate: 0, rate_per_sqft: 0, wastage_percent: 5, wastage_amount: 0, isRateOverridden: false, total_cost: 0 })} variant="outline" className="text-[10px] font-black uppercase">+ Add Layer</Button></div>
+                  <div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-serif flex items-center gap-4"><Wind className="text-orange-700" /> Foam & Cushioning</h2><Button type="button" onClick={() => appendFoam({ id: Date.now().toString(), componentName: '', foamType: (foamTypes[0] || 'PU'), specification: '32D', thickness_mm: 0, cut_length_in: 0, cut_width_in: 0, quantity: 1, sqft: 0, master_rate: 0, rate_per_sqft: 0, wastage_percent: 5, wastage_amount: 0, isRateOverridden: false, total_cost: 0 })} variant="outline" className="text-[10px] font-black uppercase">+ Add Layer</Button></div>
                   <div className="space-y-4">
                     {foamFields.map((field, index) => {
                       const row = watchedFoam?.[index] as any;
                       const hasRateMatch = !!findFoamMaster(row?.foamType, row?.specification, foamMasters);
                       return (
                         <div key={field.id} className="p-4 rounded-[20px] bg-orange-50/10 border border-orange-900/5"><div className="grid grid-cols-2 lg:grid-cols-12 gap-4 items-end">
-                           <div className="col-span-2 lg:col-span-3"><Input label="Foam Area" {...register(`foamBreakdown.${index}.componentName`)} /></div>
+                           <div className="col-span-2 lg:col-span-2"><Input label="Foam Area" {...register(`foamBreakdown.${index}.componentName`)} /></div>
                            <div className="col-span-2 lg:col-span-2"><Select options={foamTypes.map(t => ({ label: t, value: t }))} {...register(`foamBreakdown.${index}.foamType`)} /></div>
                            <div className="col-span-2 lg:col-span-2"><Select options={getFoamSpecs(row?.foamType || '').map(s => ({ label: s, value: s }))} {...register(`foamBreakdown.${index}.specification`)} /></div>
+                           <div className="col-span-1"><Input label="MM" {...register(`foamBreakdown.${index}.thickness_mm`, { valueAsNumber: true })} /></div>
                            <div className="col-span-1"><Input label="L" {...register(`foamBreakdown.${index}.cut_length_in`, { valueAsNumber: true })} /></div>
                            <div className="col-span-1"><Input label="W" {...register(`foamBreakdown.${index}.cut_width_in`, { valueAsNumber: true })} /></div>
                            <div className="col-span-1"><Input label="Qty" {...register(`foamBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>

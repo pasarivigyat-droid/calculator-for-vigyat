@@ -416,7 +416,7 @@ export default function ProductDetailPage() {
                        <div key={i} className="flex justify-between items-start text-xs border-b border-gray-50 pb-2">
                          <div className="max-w-[70%]">
                             <p className="font-bold text-[#2d221c] truncate">{row.componentName}</p>
-                            <span className="text-[9px] text-gray-400 uppercase">{row.foamType} {row.specification} | {row.thickness_in}"</span>
+                            <span className="text-[9px] text-gray-400 uppercase">{row.foamType} {row.specification} | {row.thickness_mm}mm</span>
                          </div>
                          <p className="font-medium text-orange-800">₹{Math.round(row.total_cost).toLocaleString()}</p>
                        </div>
