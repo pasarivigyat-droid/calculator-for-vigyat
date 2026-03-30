@@ -42,16 +42,16 @@ export default function ProductLibraryPage() {
   }, []);
 
   const categories = useMemo(() => {
-    const cats = Array.from(new Set(items.map(item => item.category)));
+    const cats = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
     return ["All", ...cats.sort()];
   }, [items]);
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
       const matchesSearch = 
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+        (item.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (item.sku?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (item.tags?.some(tag => tag && tag.toLowerCase().includes(searchQuery.toLowerCase())) || false);
       
       const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
       
