@@ -17,12 +17,13 @@ import {
   getMarkupSettings, saveMarkupSetting, bulkImportMasters
 } from "@/lib/firebase/services";
 
-export const dynamic = 'force-dynamic';
 import { 
   parseCSV, generateCSV, downloadCSV, validateMasterRow, getDuplicateKey, 
   ValidationError, EXPORT_HEADERS, INTERNAL_EXPORT_HEADERS, normalizePlyCategory,
   parseWoodMatrix, parsePlywoodReport, parseFoamReport
 } from "@/lib/utils/csv_handler";
+
+export const dynamic = 'force-dynamic';
 
 type MasterCategory = 'wood' | 'ply' | 'foam' | 'fabric' | 'markups';
 type SortField = 'effective_date' | 'type' | 'rate';

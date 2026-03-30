@@ -190,6 +190,7 @@ export const getDuplicateKey = (type: 'wood' | 'ply' | 'foam' | 'fabric', row: a
  * Normalizes plywood category names to canonical keys
  */
 export const normalizePlyCategory = (cat: string): string => {
+  if (!cat) return 'plywood';
   const c = cat.toLowerCase().trim().replace(/[\s_-]+/g, '');
   if (c === 'ply' || c === 'plywood') return 'plywood';
   if (c === 'flexi' || c === 'flexiply' || c === 'flex') return 'flexi_ply';
