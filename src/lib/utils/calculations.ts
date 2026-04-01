@@ -63,15 +63,15 @@ export const findPlyMaster = (category: string, thickness: number, masters: PlyM
   const normCat = normalizePlyCategory(category);
   if (!normCat) return null;
   const t = normalizeNum(thickness);
-  const today = new Date().toISOString().split('T')[0];
+  
   const matches = masters.filter(m => 
-    m.is_active &&
     normalizeStr(m.ply_category) === normCat &&
-    normalizeNum(m.thickness_mm) === t &&
-    m.effective_date <= today
+    normalizeNum(m.thickness_mm) === t
   );
   if (matches.length === 0) return null;
-  return matches.sort((a,b) => b.effective_date.localeCompare(a.effective_date))[0];
+  
+  // Sort by effective_date descending if exists, else just take the first
+  return matches.sort((a,b) => (b.effective_date || '').localeCompare(a.effective_date || ''))[0];
 };
 
 /**
@@ -132,7 +132,7 @@ export const getPlyMatchReason = (row: Partial<PlyRow>, masters: PlyMaster[]): s
   if (t === 0) return "Thickness is 0 or missing.";
   const today = new Date().toISOString().split('T')[0];
 
-  const activeMasters = masters.filter(m => m.is_active && m.effective_date <= today);
+  const activeMasters = masters;
   if (activeMasters.length === 0) return "No active ply master records found.";
 
   const catMatches = activeMasters.filter(m => normalizeStr(m.ply_category) === normCat);
@@ -206,7 +206,9 @@ export const calculatePlyRow = (row: PlyRow): PlyRow => {
  * ─────────────────────────────────────────────────────────────────────
  */
 export const calculateFoamRow = (row: FoamRow): FoamRow => {
-  const derivedRatePerSqft = (row.master_rate || 0) * (row.thickness_mm || 0);
+  // thickness_adjusted_sheet_value = master_rate × thickness_mm
+  // foam_rate_per_sqft = thickness_adjusted_sheet_value / 18
+  const derivedRatePerSqft = ((row.master_rate || 0) * (row.thickness_mm || 0)) / 18;
   const requiredSqft = Number(((row.cut_length_in * row.cut_width_in * row.quantity) / 144).toFixed(3));
   const materialCost = requiredSqft * derivedRatePerSqft;
   const wastageAmount = row.wastage_percent > 0 ? (materialCost * row.wastage_percent) / 100 : (row.wastage_amount || 0);
