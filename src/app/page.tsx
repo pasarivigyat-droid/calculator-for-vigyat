@@ -69,15 +69,21 @@ export default function DashboardPage() {
         <div className="relative z-10 space-y-1">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Workshop Intelligence</h1>
           <p className="text-amber-500/80 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5" /> Live Production Monitoring
+            <Activity className="w-3.5 h-3.5" /> Costing & Pricing Engine
           </p>
         </div>
         
         <div className="relative z-10 flex items-center gap-4">
+          <Link href="/library">
+            <Button className="h-14 px-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-3 transition-fast text-base font-bold border border-white/20">
+              <BookOpen className="w-5 h-5" />
+              Price from Library
+            </Button>
+          </Link>
           <Link href="/quote/new">
             <Button className="h-14 px-8 rounded-xl bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-3 transition-fast text-base font-bold">
               <Plus className="w-5 h-5" />
-              New Valuation
+              New Product Costing
             </Button>
           </Link>
         </div>
@@ -197,17 +203,21 @@ export default function DashboardPage() {
         <div className="lg:col-span-4 space-y-6">
            <div className="grid grid-cols-1 gap-4">
               {[
-                { title: 'Material Library', icon: LayoutGrid, link: '/masters' },
-                { title: 'Product Library', icon: BookOpen, link: '/library' },
-                { title: 'Valuation Archive', icon: Clock, link: '/quotes' }
+                { title: 'New Product Costing', desc: 'Module A', icon: LayoutGrid, link: '/quote/new', accent: 'bg-amber-50 text-amber-600' },
+                { title: 'Library & Pricing', desc: 'Module B', icon: BookOpen, link: '/library', accent: 'bg-orange-50 text-orange-600' },
+                { title: 'Material Masters', desc: 'Rate Database', icon: LayoutGrid, link: '/masters', accent: 'bg-stone-100 text-stone-500' },
+                { title: 'Quotation Archive', desc: 'Saved Quotes', icon: Clock, link: '/quotes', accent: 'bg-stone-100 text-stone-500' }
               ].map((item, i) => (
                 <Link key={i} href={item.link}>
-                   <div className="p-6 rounded-2xl bg-white border border-stone-200 shadow-sm hover:border-orange-500 transition-fast flex items-center justify-between group">
+                   <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-sm hover:border-orange-500 transition-fast flex items-center justify-between group">
                       <div className="flex items-center gap-4">
-                        <div className="p-2.5 rounded-xl bg-stone-50 text-stone-500 group-hover:text-orange-600 transition-colors">
+                        <div className={`p-2.5 rounded-xl ${item.accent} group-hover:scale-105 transition-transform`}>
                            <item.icon className="w-5 h-5" />
                         </div>
-                        <h4 className="font-bold text-stone-900">{item.title}</h4>
+                        <div>
+                          <h4 className="font-bold text-stone-900 text-sm">{item.title}</h4>
+                          <p className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">{item.desc}</p>
+                        </div>
                       </div>
                       <ChevronRight className="w-4 h-4 text-stone-300" />
                    </div>

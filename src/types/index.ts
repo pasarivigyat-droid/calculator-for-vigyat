@@ -11,7 +11,7 @@ export type MasterCategory = 'wood' | 'ply' | 'foam' | 'hardware' | 'markups' | 
 
 export type QuoteStatus = 'Draft' | 'Sent' | 'Approved' | 'Rejected' | 'Closed';
 
-export type CustomerType = 'Architect' | 'Interior Designer' | 'House Owner' | 'Showroom' | 'Third Party';
+export type CustomerType = 'Architect' | 'Interior Designer' | 'House Owner' | 'Showroom' | 'Third Party' | 'Direct Customer' | 'Marketing';
 
 // ===================================================================
 // PRODUCT LIBRARY / SKU

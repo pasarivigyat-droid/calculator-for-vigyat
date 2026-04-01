@@ -63,8 +63,11 @@ export default function ProductLibraryPage() {
     <div className="max-w-7xl mx-auto space-y-8 pb-20 px-4 md:px-0">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[9px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md uppercase tracking-widest">Module B</span>
+          </div>
           <h1 className="text-3xl font-bold text-[#2d221c]">Product Library</h1>
-          <p className="text-gray-500 mt-1">Manage reusable SKU templates and instant pricing snapshots.</p>
+          <p className="text-gray-500 mt-1 text-sm">Select a saved product → Choose customer type → Get instant pricing</p>
         </div>
         <Link href="/quote/new">
           <Button className="bg-[#2d221c] text-white rounded-2xl h-14 px-8 shadow-lg shadow-amber-900/10">
