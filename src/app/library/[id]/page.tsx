@@ -399,8 +399,8 @@ export default function ProductDetailPage() {
                      {product.woodBreakdown.map((row, i) => (
                        <div key={i} className="flex justify-between items-start text-xs border-b border-gray-50 pb-2">
                          <div className="max-w-[70%]">
-                            <p className="font-bold text-[#2d221c] truncate text-xs">{row.componentName || 'Wood Part'}</p>
-                            <span className="text-[8px] text-gray-400 uppercase">{row.woodType} | {row.length_ft}' x {row.width_in}" x {row.thickness_in}"</span>
+                            <p className="font-bold text-[#2d221c] truncate text-xs">{row.woodType}</p>
+                            <span className="text-[8px] text-gray-400 uppercase">{row.length_ft}' x {row.width_in}" x {row.thickness_in}" • Qt: {row.quantity}</span>
                          </div>
                          <p className="font-medium text-amber-800 text-xs">₹{Math.round(row.total_cost).toLocaleString()}</p>
                        </div>
@@ -408,8 +408,8 @@ export default function ProductDetailPage() {
                      {product.plyBreakdown.map((row, i) => (
                        <div key={i} className="flex justify-between items-start text-xs border-b border-gray-50 pb-2">
                          <div className="max-w-[70%]">
-                            <p className="font-bold text-[#2d221c] truncate text-xs">{row.componentName || 'Ply Part'}</p>
-                            <span className="text-[8px] text-gray-400 uppercase">{row.plyCategory} | {row.thickness_mm}mm</span>
+                            <p className="font-bold text-[#2d221c] truncate text-xs">{row.plyCategory}</p>
+                            <span className="text-[8px] text-gray-400 uppercase">{row.thickness_mm}mm • L:{row.cut_length_in}" x W:{row.cut_width_in}" • Qt: {row.quantity}</span>
                          </div>
                          <p className="font-medium text-blue-800 text-xs">₹{Math.round(row.total_cost).toLocaleString()}</p>
                        </div>
@@ -433,8 +433,8 @@ export default function ProductDetailPage() {
                      {product.foamBreakdown.map((row, i) => (
                        <div key={i} className="flex justify-between items-start text-xs border-b border-gray-50 pb-2">
                          <div className="max-w-[70%]">
-                            <p className="font-bold text-[#2d221c] truncate text-xs">{row.componentName || 'Foam Part'}</p>
-                            <span className="text-[8px] text-gray-400 uppercase">{row.foamType} {row.specification} | {row.thickness_mm}mm</span>
+                            <p className="font-bold text-[#2d221c] truncate text-xs">{row.foamType} - {row.specification}</p>
+                            <span className="text-[8px] text-gray-400 uppercase">{row.thickness_mm}mm • L:{row.cut_length_in}" x W:{row.cut_width_in}" • Qt: {row.quantity}</span>
                          </div>
                          <p className="font-medium text-orange-800 text-xs">₹{Math.round(row.total_cost).toLocaleString()}</p>
                        </div>

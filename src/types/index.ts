@@ -63,7 +63,7 @@ export interface ProductLibraryItem {
 
 export interface WoodRow {
   id: string;
-  componentName: string;
+  componentName?: string;
   woodType: string;
   length_ft: number;
   width_in: number;
@@ -78,7 +78,7 @@ export interface WoodRow {
 
 export interface PlyRow {
   id: string;
-  componentName: string;
+  componentName?: string;
   plyCategory: string;
   thickness_mm: number;
   sheet_length_ft: number;
@@ -96,7 +96,7 @@ export interface PlyRow {
 
 export interface FoamRow {
   id: string;
-  componentName: string;
+  componentName?: string;
   foamType: string;
   specification: string;
   thickness_mm: number;

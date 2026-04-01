@@ -387,8 +387,8 @@ export default function QuotationTemplatePage() {
                     <tbody>
                        {quote.woodBreakdown.map((row) => (
                           <tr key={row.id}>
-                             <td className="p-4 border border-gray-100 font-bold uppercase">{row.componentName}</td>
-                             <td className="p-4 border border-gray-100 text-[10px] uppercase">{row.woodType} · {row.length_ft}'×{row.width_in}"×{row.thickness_in}"</td>
+                             <td className="p-4 border border-gray-100 font-bold uppercase">{row.woodType}</td>
+                             <td className="p-4 border border-gray-100 text-[10px] uppercase">L:{row.length_ft}' × W:{row.width_in}" × T:{row.thickness_in}"</td>
                              <td className="p-4 border border-gray-100 text-center font-bold">{row.quantity}</td>
                              <td className="p-4 border border-gray-100 text-right italic font-mono">{row.gun_foot}gf</td>
                              <td className="p-4 border border-gray-100 text-right">₹{row.rate_per_gf}</td>
@@ -407,8 +407,8 @@ export default function QuotationTemplatePage() {
                  <table className="w-full text-xs border-collapse border border-gray-100">
                     <thead className="bg-gray-100 uppercase text-[9px] font-black text-gray-600 border-b border-gray-200">
                        <tr>
-                          <th className="p-4 text-left border border-gray-100">Component Part</th>
-                          <th className="p-4 text-left border border-gray-100">Board Type / Thickness</th>
+                          <th className="p-4 text-left border border-gray-100">Board Type</th>
+                          <th className="p-4 text-left border border-gray-100">Specs / Thickness</th>
                           <th className="p-4 text-center border border-gray-100">Qty</th>
                           <th className="p-4 text-right border border-gray-100">Audit SF</th>
                           <th className="p-4 text-right border border-gray-100">Rate (Inc. Wast)</th>
@@ -418,8 +418,8 @@ export default function QuotationTemplatePage() {
                     <tbody>
                        {quote.plyBreakdown.map((row) => (
                           <tr key={row.id}>
-                             <td className="p-4 border border-gray-100 font-bold uppercase">{row.componentName}</td>
-                             <td className="p-4 border border-gray-100 text-[10px] uppercase">{row.plyCategory} · {row.thickness_mm}MM</td>
+                             <td className="p-4 border border-gray-100 font-bold uppercase">{row.plyCategory}</td>
+                             <td className="p-4 border border-gray-100 text-[10px] uppercase">{row.thickness_mm}MM · L:{row.cut_length_in}" × W:{row.cut_width_in}"</td>
                              <td className="p-4 border border-gray-100 text-center font-bold">{row.quantity}</td>
                              <td className="p-4 border border-gray-100 text-right italic font-mono">{row.sqft}sf</td>
                              <td className="p-4 border border-gray-100 text-right text-[10px]">₹{row.rate_per_sqft} / {row.wastage_percent}%</td>
@@ -438,8 +438,8 @@ export default function QuotationTemplatePage() {
                  <table className="w-full text-xs border-collapse border border-gray-100">
                     <thead className="bg-gray-100 uppercase text-[9px] font-black text-gray-600 border-b border-gray-200">
                        <tr>
-                          <th className="p-4 text-left border border-gray-100">Audit Area</th>
-                          <th className="p-4 text-left border border-gray-100">Specs / Density</th>
+                          <th className="p-4 text-left border border-gray-100">Foam Type</th>
+                          <th className="p-4 text-left border border-gray-100">Specs / Thickness</th>
                           <th className="p-4 text-center border border-gray-100">Qty</th>
                           <th className="p-4 text-right border border-gray-100">Full Area (SF)</th>
                           <th className="p-4 text-right border border-gray-100">Unit Pricing</th>
@@ -449,8 +449,8 @@ export default function QuotationTemplatePage() {
                     <tbody>
                        {quote.foamBreakdown.map((row) => (
                           <tr key={row.id}>
-                             <td className="p-4 border border-gray-100 font-bold uppercase">{row.componentName}</td>
-                             <td className="p-4 border border-gray-100 text-[10px] uppercase whitespace-nowrap">{row.foamType} · {row.specification} · {row.thickness_in}"</td>
+                             <td className="p-4 border border-gray-100 font-bold uppercase">{row.foamType} - {row.specification}</td>
+                             <td className="p-4 border border-gray-100 text-[10px] uppercase whitespace-nowrap">{row.thickness_mm}MM · L:{row.cut_length_in}" × W:{row.cut_width_in}"</td>
                              <td className="p-4 border border-gray-100 text-center font-bold">{row.quantity}</td>
                              <td className="p-4 border border-gray-100 text-right italic font-mono">{row.sqft}sf</td>
                              <td className="p-4 border border-gray-100 text-right text-[10px]">₹{row.master_rate} / ₹{row.rate_per_sqft}</td>

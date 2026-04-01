@@ -96,7 +96,20 @@ export default function EditQuotePage() {
   useEffect(() => {
     (watchedPly || []).forEach((row: any, index: number) => {
       if (row?.isRateOverridden) return;
-      const match = findPlyMaster(row.plyCategory, row.thickness_mm || 0, plyMasters);
+      
+      const availableThicknesses = Array.from(new Set(plyMasters.filter(m => m.ply_category === row.plyCategory).map(m => m.thickness_mm)));
+      let currentThickness = row.thickness_mm;
+      
+      if (availableThicknesses.length === 1 && currentThickness !== availableThicknesses[0]) {
+        currentThickness = availableThicknesses[0];
+        setValue(`plyBreakdown.${index}.thickness_mm`, currentThickness);
+      } else if (availableThicknesses.length > 0 && !availableThicknesses.includes(currentThickness) && currentThickness === 18) {
+         // Default was 18, but 18 isn't available for this ply, pick the first
+         currentThickness = availableThicknesses[0];
+         setValue(`plyBreakdown.${index}.thickness_mm`, currentThickness);
+      }
+
+      const match = findPlyMaster(row.plyCategory, currentThickness || 0, plyMasters);
       if (match) {
         if (row.rate_per_sqft !== match.rate_per_sqft) {
           setValue(`plyBreakdown.${index}.rate_per_sqft`, match.rate_per_sqft);
@@ -205,20 +218,13 @@ export default function EditQuotePage() {
                       const hasRateMatch = !!findWoodMaster(row.woodType, row.length_ft || 0, row.width_in || 0, row.thickness_in || 0, woodMasters);
                       return (
                         <div key={field.id} className="p-4 rounded-[20px] bg-amber-50/10 border border-amber-900/5"><div className="grid grid-cols-2 lg:grid-cols-12 gap-4 items-end">
-                           <div className="col-span-2 lg:col-span-3"><Input label="Component" {...register(`woodBreakdown.${index}.componentName`)} /></div>
-                           <div className="col-span-2 lg:col-span-2"><Select options={woodTypes.map(t => ({ label: t, value: t }))} {...register(`woodBreakdown.${index}.woodType`)} /></div>
+                           <div className="col-span-2 lg:col-span-3"><Select label="Wood Type" options={woodTypes.map(t => ({ label: t, value: t }))} {...register(`woodBreakdown.${index}.woodType`)} /></div>
                            <div className="col-span-1"><Input label="L (ft)" {...register(`woodBreakdown.${index}.length_ft`, { valueAsNumber: true })} /></div>
                            <div className="col-span-1"><Input label="W (in)" {...register(`woodBreakdown.${index}.width_in`, { valueAsNumber: true })} /></div>
                            <div className="col-span-1"><Input label="T (in)" {...register(`woodBreakdown.${index}.thickness_in`, { valueAsNumber: true })} /></div>
                            <div className="col-span-1"><Input label="Wast %" {...register(`woodBreakdown.${index}.wastage_percent`, { valueAsNumber: true })} /></div>
                            <div className="col-span-1"><Input label="Qty" {...register(`woodBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
-                           <div className="col-span-2">
-                             <label className="text-[8px] font-black uppercase tracking-tighter block mb-1 opacity-40">Running GF</label>
-                             <div className="h-12 flex items-center px-4 bg-amber-50/30 rounded-xl border border-amber-900/5 text-sm font-bold text-black/60">
-                               {row?.gun_foot || 0}
-                             </div>
-                           </div>
-                           <div className="col-span-2 relative">
+                           <div className="col-span-2 lg:col-span-3 relative">
                               <Input label="Rate" readOnly={hasRateMatch} {...register(`woodBreakdown.${index}.rate_per_gf`, { valueAsNumber: true })} />
                               {hasRateMatch ? (
                                 <p className="absolute left-1 -bottom-4 text-[8px] font-black text-amber-600/40 uppercase tracking-tighter italic">Auto-Locked</p>
@@ -240,13 +246,12 @@ export default function EditQuotePage() {
                       const hasRateMatch = !!findPlyMaster(row?.plyCategory, row?.thickness_mm || 0, plyMasters);
                       return (
                         <div key={field.id} className="p-4 rounded-[20px] bg-blue-50/10 border border-blue-900/5"><div className="grid grid-cols-2 lg:grid-cols-12 gap-4 items-end">
-                           <div className="col-span-2 lg:col-span-3"><Input label="Allocation" {...register(`plyBreakdown.${index}.componentName`)} /></div>
-                           <div className="col-span-2 lg:col-span-2"><Select options={plyCategories.map(c => ({ label: c, value: c }))} {...register(`plyBreakdown.${index}.plyCategory`)} /></div>
+                           <div className="col-span-2 lg:col-span-3"><Select label="Board Category" options={plyCategories.map(c => ({ label: c, value: c }))} {...register(`plyBreakdown.${index}.plyCategory`)} /></div>
+                           <div className="col-span-1 lg:col-span-2 pb-2"><Select label="Thickness" options={Array.from(new Set(plyMasters.filter(m => m.ply_category === row?.plyCategory).map(m => m.thickness_mm))).map((v:any) => ({label: `${v}mm`, value: v}))} {...register(`plyBreakdown.${index}.thickness_mm`, { valueAsNumber: true })} /></div>
                            <div className="col-span-1"><Input label="L (in)" {...register(`plyBreakdown.${index}.cut_length_in`, { valueAsNumber: true })} /></div>
                            <div className="col-span-1"><Input label="W (in)" {...register(`plyBreakdown.${index}.cut_width_in`, { valueAsNumber: true })} /></div>
                            <div className="col-span-1"><Input label="Qty" {...register(`plyBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
-                           <div className="col-span-1"><Input label="MM" {...register(`plyBreakdown.${index}.thickness_mm`, { valueAsNumber: true })} /></div>
-                           <div className="col-span-2 relative">
+                           <div className="col-span-2 lg:col-span-3 relative">
                               <Input label="Rate" readOnly={hasRateMatch} {...register(`plyBreakdown.${index}.rate_per_sqft`, { valueAsNumber: true })} />
                               {hasRateMatch ? (
                                 <p className="absolute left-1 -bottom-4 text-[8px] font-black text-blue-600/40 uppercase tracking-tighter italic">Auto-Locked</p>
@@ -267,25 +272,28 @@ export default function EditQuotePage() {
           {step === 3 && (
              <div className="space-y-10 animate-in fade-in duration-500">
                 <div className="bg-white p-6 md:p-10 rounded-[30px] border border-amber-900/5 shadow-wood">
-                   <div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-serif flex items-center gap-4"><Wind className="text-orange-700" /> Comfort Breakdown</h2><Button type="button" variant="outline" size="sm" onClick={() => appendFoam({ id: Date.now().toString(), componentName: '', foamType: (foamTypes[0] || ''), specification: '', thickness_in: 0, cut_length_in: 0, cut_width_in: 0, quantity: 1, sqft: 0, master_rate: 0, rate_per_sqft: 0, wastage_percent: 5, wastage_amount: 0, isRateOverridden: false, total_cost: 0 })} className="text-[10px] font-black uppercase">+ Add Foam</Button></div>
+                   <div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-serif flex items-center gap-4"><Wind className="text-orange-700" /> Comfort Breakdown</h2><Button type="button" variant="outline" size="sm" onClick={() => appendFoam({ id: Date.now().toString(), foamType: (foamTypes[0] || ''), specification: '', thickness_mm: 0, cut_length_in: 0, cut_width_in: 0, quantity: 1, sqft: 0, master_rate: 0, rate_per_sqft: 0, wastage_percent: 5, wastage_amount: 0, isRateOverridden: false, total_cost: 0 })} className="text-[10px] font-black uppercase">+ Add Foam</Button></div>
                    <div className="space-y-4">
                      {foamFields.map((field, index) => {
                        const row = watchedFoam?.[index] as any;
                        const hasRateMatch = !!findFoamMaster(row?.foamType, row?.specification, foamMasters);
                        return (
                          <div key={field.id} className="p-4 rounded-[20px] bg-orange-50/10 border border-orange-900/5"><div className="grid grid-cols-2 lg:grid-cols-12 gap-4 items-end">
-                            <div className="col-span-2 lg:col-span-4"><Input label="Area" {...register(`foamBreakdown.${index}.componentName`)} /></div>
-                            <div className="col-span-2 lg:col-span-3"><Select options={foamTypes.map(t => ({ label: t, value: t }))} {...register(`foamBreakdown.${index}.foamType`)} /></div>
-                             <div className="col-span-2 lg:col-span-3 pb-2"><Select options={getFoamSpecs(row?.foamType || '').map(s => ({ label: s, value: s }))} {...register(`foamBreakdown.${index}.specification`)} /></div>
-                             <div className="col-span-2 lg:col-span-2 relative">
-                                <Input label="Rate" readOnly={hasRateMatch} {...register(`foamBreakdown.${index}.master_rate`, { valueAsNumber: true })} />
-                                {hasRateMatch ? (
-                                  <p className="absolute left-1 -bottom-4 text-[8px] font-black text-orange-600/40 uppercase tracking-tighter italic">Auto-Locked</p>
-                                ) : (
-                                  row?.foamType && <p className="absolute left-1 -bottom-4 text-[8px] font-black text-rose-500 uppercase tracking-tighter animate-pulse">Enter Custom Price</p>
-                                )}
-                             </div>
-                             <div className="col-span-2 lg:col-span-2 flex justify-center"><button type="button" onClick={() => removeFoam(index)}><Trash2 className="w-5 h-5 text-rose-500" /></button></div>
+                            <div className="col-span-2 lg:col-span-2"><Select label="Foam Type" options={foamTypes.map(t => ({ label: t, value: t }))} {...register(`foamBreakdown.${index}.foamType`)} /></div>
+                            <div className="col-span-2 lg:col-span-2 pb-2"><Select label="Specification" options={getFoamSpecs(row?.foamType || '').map(s => ({ label: s, value: s }))} {...register(`foamBreakdown.${index}.specification`)} /></div>
+                            <div className="col-span-1"><Input label="Thickness (mm)" {...register(`foamBreakdown.${index}.thickness_mm`, { valueAsNumber: true })} /></div>
+                            <div className="col-span-1"><Input label="L (in)" {...register(`foamBreakdown.${index}.cut_length_in`, { valueAsNumber: true })} /></div>
+                            <div className="col-span-1"><Input label="W (in)" {...register(`foamBreakdown.${index}.cut_width_in`, { valueAsNumber: true })} /></div>
+                            <div className="col-span-1"><Input label="Qty" {...register(`foamBreakdown.${index}.quantity`, { valueAsNumber: true })} /></div>
+                            <div className="col-span-2 lg:col-span-3 relative">
+                               <Input label="Rate" readOnly={hasRateMatch} {...register(`foamBreakdown.${index}.master_rate`, { valueAsNumber: true })} />
+                               {hasRateMatch ? (
+                                 <p className="absolute left-1 -bottom-4 text-[8px] font-black text-orange-600/40 uppercase tracking-tighter italic">Auto-Locked</p>
+                               ) : (
+                                 row?.foamType && <p className="absolute left-1 -bottom-4 text-[8px] font-black text-rose-500 uppercase tracking-tighter animate-pulse">Enter Custom Price</p>
+                               )}
+                            </div>
+                            <div className="col-span-2 lg:col-span-1 flex justify-center"><button type="button" onClick={() => removeFoam(index)}><Trash2 className="w-5 h-5 text-rose-500" /></button></div>
                          </div></div>
                        );
                      })}
