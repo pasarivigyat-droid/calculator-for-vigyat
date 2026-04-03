@@ -122,7 +122,7 @@ export default function MastersPage() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const text = event.target?.result as string;
+      const text = (event.target?.result as string).replace(/^\uFEFF/, '');
       let parsedData: any[] = [];
       
       if (useSpecialParser) {
@@ -133,7 +133,7 @@ export default function MastersPage() {
         const rows = parseCSV(text);
         if (rows.length < 2) return alert("Invalid CSV file — missing headers or data.");
         
-        const headers = rows[0].map(h => h.trim().toLowerCase().replace(/\s+/g, '_'));
+        const headers = rows[0].map(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''));
         const rawData = rows.slice(1);
         const numFields = NUMERIC_FIELDS[activeTab] || [];
 
@@ -188,13 +188,19 @@ export default function MastersPage() {
       const collectionName = collectionNameMap[activeTab] as any;
       const invalidRowIndices = new Set(importErrors.map(e => e.row - 1));
       let validRows = importData.filter((_, idx) => !invalidRowIndices.has(idx));
-      
       if (activeTab === 'ply' || activeTab === 'foam' || activeTab === 'fabric') {
         validRows = validRows.map(row => ({
           ...row,
           effective_date: row.effective_date || globalImportDate,
           is_active: row.is_active !== undefined ? row.is_active : globalImportActive
         }));
+      }
+
+      if (validRows.length === 0) {
+         alert("Import aborted! 0 validation-passed rows. Did you use the EXACT column headers e.g. wood_type, rate_per_gf ?");
+         setIsImporting(false);
+         setImportStage('idle');
+         return;
       }
 
       const count = await bulkImportMasters(collectionName, validRows, importMode, (stage, done, total) => {
@@ -204,6 +210,8 @@ export default function MastersPage() {
       
       setImportStage('finished');
       setImportResult({ success: true, count: count || validRows.length, mode: importMode });
+      setIsImportModalOpen(false);
+      alert(`Import Successful! ${validRows.length} records added.`);
       setTimeout(() => loadData(), 500);
     } catch (err: any) {
       alert("Import Error: " + err.message);
