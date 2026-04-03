@@ -486,6 +486,19 @@ export default function MastersPage() {
             <div className="bg-white w-full max-w-2xl rounded-3xl shadow-xl p-10 animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
                 {/* Simplified CSV content... */}
                 <h2 className="text-2xl font-bold mb-6">Bulk Integration</h2>
+                
+                <div className="flex items-center gap-6 mb-6 p-4 bg-stone-50 rounded-xl border border-stone-200">
+                   <p className="text-sm font-bold text-stone-900uppercase tracking-widest pl-2">Strategy:</p>
+                   <label className="flex items-center gap-2 cursor-pointer font-bold text-sm text-emerald-700">
+                      <input type="radio" name="importMode" checked={importMode === 'append'} onChange={() => setImportMode('append')} className="w-4 h-4 accent-emerald-600" />
+                      Add to existing list
+                   </label>
+                   <label className="flex items-center gap-2 cursor-pointer font-bold text-sm text-red-600">
+                      <input type="radio" name="importMode" checked={importMode === 'replace'} onChange={() => setImportMode('replace')} className="w-4 h-4 accent-red-600" />
+                      Delete old list completely
+                   </label>
+                </div>
+
                 <input type="file" accept=".csv" onChange={handleFileUpload} className="mb-6 w-full p-10 border-2 border-dashed border-stone-100 rounded-2xl text-center text-stone-300 font-bold uppercase" />
                 <div className="flex justify-end gap-4 mt-10">
                    <Button variant="ghost" onClick={() => setIsImportModalOpen(false)}>Abort</Button>
