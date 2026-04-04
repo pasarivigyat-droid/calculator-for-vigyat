@@ -160,16 +160,16 @@ export default function NewQuotePage() {
     (watchedPly || []).forEach((row: any, index: number) => {
       if (row?.isRateOverridden) return;
       
-      const availableThicknesses = Array.from(new Set(plyMasters.filter(m => m.ply_category === row.plyCategory).map(m => m.thickness_mm)));
-      let currentThickness = row.thickness_mm;
+      const availableThicknesses = Array.from(new Set(plyMasters.filter(m => m.ply_category === row.plyCategory).map(m => Number(m.thickness_mm))));
+      let currentThickness = Number(row.thickness_mm);
       
       if (availableThicknesses.length === 1 && currentThickness !== availableThicknesses[0]) {
         currentThickness = availableThicknesses[0];
-        setValue(`plyBreakdown.${index}.thickness_mm`, currentThickness);
+        setValue(`plyBreakdown.${index}.thickness_mm`, currentThickness.toString());
       } else if (availableThicknesses.length > 0 && !availableThicknesses.includes(currentThickness) && currentThickness === 18) {
          // Default was 18, but 18 isn't available for this ply, pick the first
          currentThickness = availableThicknesses[0];
-         setValue(`plyBreakdown.${index}.thickness_mm`, currentThickness);
+         setValue(`plyBreakdown.${index}.thickness_mm`, currentThickness.toString());
       }
 
       const match = findPlyMaster(row.plyCategory, currentThickness || 0, plyMasters);
@@ -395,7 +395,7 @@ export default function NewQuotePage() {
           {step === 2 && (
             <div className="space-y-10 animate-in fade-in duration-500">
                <div className="bg-white p-6 md:p-10 rounded-[30px] shadow-wood border border-amber-900/5">
-                  <div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-serif flex items-center gap-4"><Trees className="text-amber-700" /> Wood Breakdown</h2><Button type="button" onClick={() => appendWood({ id: Date.now().toString(), componentName: '', woodType: (woodTypes[0] || ''), length_ft: 0, width_in: 0, thickness_in: 0, quantity: 1, wastage_percent: 7.5, rate_per_gf: 0, gun_foot: 0, total_cost: 0, isRateOverridden: false })} variant="outline" className="text-[10px] font-black uppercase">+ Add Row</Button></div>
+                  <div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-serif flex items-center gap-4"><Trees className="text-amber-700" /> Wood Breakdown</h2><Button type="button" onClick={() => appendWood({ id: Date.now().toString(), componentName: '', woodType: (woodTypes[0] || ''), length_ft: 0, width_in: 0, thickness_in: 0, quantity: 1, wastage_percent: 3, rate_per_gf: 0, gun_foot: 0, total_cost: 0, isRateOverridden: false })} variant="outline" className="text-[10px] font-black uppercase">+ Add Row</Button></div>
                   <div className="space-y-4">
                     {woodFields.map((field, index) => {
                       const row = watchedWood?.[index] as any;
